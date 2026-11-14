@@ -11,6 +11,14 @@ public sealed class ControlExecutionOptions
     [Range(1, 10_000)]
     public int MaxRows { get; set; } = 1000;
 
+    /// <summary>Upper bound for a preview (an unsaved definition, e.g. an AI suggestion before approval).</summary>
+    [Range(1, 1000)]
+    public int PreviewMaxRows { get; set; } = 100;
+
+    /// <summary>Rows returned by a preview when the caller does not ask for a number.</summary>
+    [Range(1, 1000)]
+    public int PreviewDefaultRows { get; set; } = 50;
+
     [Range(1, 300)]
     public int CommandTimeoutSeconds { get; set; } = 30;
 

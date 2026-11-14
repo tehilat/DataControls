@@ -69,6 +69,22 @@ public static class IntegrationDb
         new(Connections, Options.Create(new ControlExecutionOptions { CommandTimeoutSeconds = timeoutSeconds }),
             NullLogger<SqlControlRunner>.Instance);
 
+    /// <summary>Runs a hand-written statement as the application (dbo) — for setup and cleanup only.</summary>
+    public static async Task ExecuteAsync(string sql, params (string Name, object Value)[] parameters)
+    {
+        await using var connection = Connections.Create();
+        await connection.OpenAsync();
+        await using var command = new SqlCommand(sql, connection);
+        foreach (var (name, value) in parameters) command.Parameters.AddWithValue(name, value);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    /// <summary>Removes a control created by a test, with its runs and their stored results (cascade).</summary>
+    public static Task DeleteControlAsync(int controlId) => ExecuteAsync("""
+        DELETE FROM ctl.ControlRuns WHERE ControlId = @id;
+        DELETE FROM ctl.Controls WHERE ControlId = @id;
+        """, ("@id", controlId));
+
     /// <summary>Runs a hand-written query as the application (dbo) — for expectations and setup only.</summary>
     public static async Task<List<T>> QueryAsync<T>(string sql, params (string Name, object Value)[] parameters)
     {

@@ -22,6 +22,18 @@ public static class FieldDataTypes
         return Enum.IsDefined(type);
     }
 
+    /// <summary>The key used in meta and in the API ("number", "datetime", ...).</summary>
+    public static string ToKey(this FieldDataType type) => type switch
+    {
+        FieldDataType.Number => "number",
+        FieldDataType.Text => "text",
+        FieldDataType.Date => "date",
+        FieldDataType.DateTime => "datetime",
+        FieldDataType.Boolean => "boolean",
+        FieldDataType.Enum => "enum",
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+    };
+
     public static string HebrewName(this FieldDataType type) => type switch
     {
         FieldDataType.Number => "מספר",

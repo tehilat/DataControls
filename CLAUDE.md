@@ -76,12 +76,16 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
   then `sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i .\database\99_verify.sql` (expect 14/14 Passed).
   `06_demo_add_weather_alerts.sql` is optional (genericity demo) and re-runnable.
   Seed dates are relative: valid future dates ≥ +365 days, invalid past dates ≥ 30 days back.
-- API: `cd backend && dotnet run --project DataControls.Api` (config: `ConnectionStrings:DroneOps`,
-  `ControlExecution:{MaxRows,CommandTimeoutSeconds,RunnerUser}`, `Metadata:{AllowedSchemas,CacheSeconds}`)
+- API: `cd backend && dotnet run --project DataControls.Api` → http://localhost:5149, Swagger UI at `/swagger`,
+  OpenAPI at `/openapi/v1.json` (Development). Config: `ConnectionStrings:DroneOps`,
+  `ControlExecution:{MaxRows,CommandTimeoutSeconds,RunnerUser,PreviewMaxRows,PreviewDefaultRows}`,
+  `Metadata:{AllowedSchemas,CacheSeconds}`, `Cors:AllowedOrigins` (default `http://localhost:4200`).
+  `DataControls.Api.http` has sample requests.
 - AI service: `cd ai-service && .venv\Scripts\activate && uvicorn main:app --reload --port 8001`
 - Frontend: `cd frontend && npm start`
-- Tests: `cd backend && dotnet test` (unit + integration; integration needs the DB from scripts 01–05 and
-  skips itself if it is unreachable). Unit only: `dotnet test --filter "Category!=Integration"`.
+- Tests: `cd backend && dotnet test` (unit + API + integration; integration needs the DB from scripts 01–05 and
+  skips itself if it is unreachable). Without DB: `dotnet test --filter "Category!=Integration"` (includes the
+  API tests that run on the in-memory catalog via `CatalogOnlyApiFactory`).
   Integration expectations are parsed from `database/99_verify.sql` — keep that file the single source of truth.
 
 ## Backend engine (implemented)
@@ -90,6 +94,14 @@ Hebrew errors, value ranges from `sys.columns`) → `SqlQueryBuilder` → `SqlCo
 orchestrated by `ControlExecutionService`. Text params are always nvarchar; text `isEmpty` uses TRIM.
 SQL text for `meta`/`ctl` (the system's own tables) lives only in Infrastructure repositories/providers;
 business table/column names never appear in code.
+
+## API layer (implemented)
+See `docs/architecture.md` ("שכבת ה-API", "הנחות ומגבלות"). Controllers: `metadata` (business-only catalog via
+`BusinessCatalogService`), `controls` (CRUD + rowVersion, activate/deactivate, validate, preview ≤100 rows, run),
+`runs` (history, run detail, stored violations with paging/search/typed filter+sort). Run results are stored in
+`ctl.ControlRunViolations` in canonical JSON (`CanonicalValueJson`); typed sort/filter use a fixed set of
+`TRY_CONVERT` expressions (`TypedJsonValue`), keys must be in the run's column snapshot. Errors are Hebrew
+ProblemDetails (`ApiExceptionHandler`, `ModelStateProblems`) with JSON paths. `GeneratedSql` is never exposed.
 
 ## Working agreement with Claude
 - Plan before coding; work in small steps, one layer at a time.

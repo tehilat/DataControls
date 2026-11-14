@@ -208,9 +208,26 @@ CREATE TABLE ctl.ControlRuns
     ViolationCount INT            NULL,
     DurationMs     INT            NULL,
     ErrorMessage   NVARCHAR(2000) NULL,
-    GeneratedSql   NVARCHAR(MAX)  NULL
+    GeneratedSql   NVARCHAR(MAX)  NULL,
+    -- snapshot of the result columns (business key, Hebrew name, data type, unit) at run time
+    ColumnsJson    NVARCHAR(MAX)  NULL CONSTRAINT CK_ControlRuns_ColumnsJson CHECK (ColumnsJson IS NULL OR ISJSON(ColumnsJson) = 1)
 );
 CREATE INDEX IX_ControlRuns_ControlId ON ctl.ControlRuns(ControlId);
+
+/* The failing records of a run. Values are stored in a canonical format
+   (numbers invariant, dates ISO 8601) so the API can sort and filter them by type. */
+CREATE TABLE ctl.ControlRunViolations
+(
+    RunId        INT            NOT NULL CONSTRAINT FK_ControlRunViolations_ControlRuns
+                                         REFERENCES ctl.ControlRuns(RunId) ON DELETE CASCADE,
+    RowNumber    INT            NOT NULL,
+    RecordId     NVARCHAR(100)  NULL,
+    DisplayValue NVARCHAR(400)  NULL,
+    ValuesJson   NVARCHAR(MAX)  NOT NULL CONSTRAINT CK_ControlRunViolations_ValuesJson CHECK (ISJSON(ValuesJson) = 1),
+    Reason       NVARCHAR(4000) NOT NULL,
+    SearchText   NVARCHAR(MAX)  NOT NULL,
+    CONSTRAINT PK_ControlRunViolations PRIMARY KEY (RunId, RowNumber)
+);
 GO
 
 PRINT N'01_schema.sql completed.';

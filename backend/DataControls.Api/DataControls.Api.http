@@ -1,6 +1,28 @@
-@DataControls.Api_HostAddress = http://localhost:5149
+@host = http://localhost:5149
 
-GET {{DataControls.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+GET {{host}}/api/metadata/entities
 
 ###
+GET {{host}}/api/metadata/entities/Delivery/fields?depth=2
+
+###
+GET {{host}}/api/metadata/operators
+
+###
+GET {{host}}/api/controls
+
+###
+POST {{host}}/api/controls/validate
+Content-Type: application/json
+
+{ "definition": { "version": 1, "rootEntity": "Delivery",
+  "condition": { "type": "rule", "field": "PackageWeightKg", "operator": "gt", "compareTo": { "kind": "field", "field": "Drone.MaxPayloadKg" } } } }
+
+###
+POST {{host}}/api/controls/1/runs
+
+###
+GET {{host}}/api/runs?controlId=1
+
+###
+GET {{host}}/api/runs/1/violations?page=1&pageSize=20&sortBy=PackageWeightKg&sortDir=desc
