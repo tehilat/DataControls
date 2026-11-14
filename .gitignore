@@ -485,3 +485,16 @@ $RECYCLE.BIN/
 .venv/
 __pycache__/
 *.pyc
+# explicit, not only through the .gitignore that pytest writes inside its own cache folder
+.pytest_cache/
+
+# Angular / Node (also in frontend/.gitignore; repeated here so the root file covers the whole repo)
+node_modules/
+.angular/
+dist/
+
+# Keys and local certificates must never be committed
+*.pem
+*.key
+*.crt
+*.p12
