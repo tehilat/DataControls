@@ -6,6 +6,9 @@ A generic web system that lets non-technical business users define data-quality 
 Stage B adds a free-text → control definition flow via an AI layer (mocked, swappable).
 The evaluation focuses on genericity, architecture, security, UX and AI-readiness — not just screens.
 
+## Business domain
+Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec: `docs/db-instructions.md`.
+
 ## Tech stack (mandatory, from the assignment)
 - Backend: .NET 10 ASP.NET Core Web API (C#), controllers
 - AI service: Python (FastAPI) — separate service, mock provider only (no real AI calls)
@@ -14,7 +17,7 @@ The evaluation focuses on genericity, architecture, security, UX and AI-readines
 
 ## Repository layout
 ```
-/database            SQL scripts: 01_schema.sql, 02_metadata.sql, 03_seed.sql (valid + invalid data)
+/database            SQL scripts 01_schema … 06_demo, 99_verify.sql (see docs/db-instructions.md)
 /backend             DataControls.sln
   DataControls.Domain          entities: Control, ConditionGroup, Condition, Operator enums, metadata models
   DataControls.Application     services, interfaces (IControlRepository, IQueryBuilder, IControlRunner, IAiControlGenerator)
@@ -27,19 +30,22 @@ The evaluation focuses on genericity, architecture, security, UX and AI-readines
 ```
 
 ## Core design rules
-1. **Metadata layer is the key to genericity.** Business catalog tables (e.g. `meta.Entities`,
-   `meta.Fields`, `meta.Relations`) map business terms in Hebrew ("עובד", "שכר", "מחלקה")
-   to physical tables/columns and joins. The UI and the AI only ever see business terms.
+1. **Metadata layer is the key to genericity.** Business catalog tables (`meta.Entities`,
+   `meta.Fields`, `meta.FieldOptions`, `meta.Relations`, `meta.Operators`, `meta.DataTypeOperators`)
+   map business terms in Hebrew ("משלוח", "רחפן", "משקל חבילה") to physical tables/columns and joins.
+   No SQL is stored in meta; translation to SQL exists only in code.
+   Schemas: `ops` = business data, `meta` = catalog, `ctl` = controls and runs. The UI and the AI only ever see business terms.
    No table or column name may be hard-coded in C#, Python or Angular.
 2. **A control is stored as data (JSON condition tree)**, not as SQL:
    root entity + nested groups (AND/OR) of conditions (field, operator, value or other field).
-   Saved in `ctl.Controls` table. Reusable and editable.
+   Saved in `ctl.Controls`. JSON schema is defined in docs/db-instructions.md (version, rootEntity, condition tree,
+   operands: value / field / today / now). Reusable and editable.
 3. **Separation:** Definition (JSON) → QueryBuilder (translates to SQL) → Runner (executes, read-only).
    Each layer behind an interface.
 4. **SQL safety (non-negotiable):**
    - Identifiers (tables/columns/joins) come ONLY from the metadata whitelist; never from user text.
    - All values are SQL parameters — never string-concatenated.
-   - Only SELECT is generated; runner uses a read-only DB login (db_datareader on data schema only).
+   - Only SELECT is generated; each run executes inside `EXECUTE AS USER = 'controls_runner'` (SELECT on `ops` only), then `REVERT`.
    - Command timeout + row limit (TOP / paging).
    - Validate operator vs field type (e.g. no ">" on text).
 5. **Results** return the failing records + a human-readable Hebrew reason per record
@@ -59,7 +65,7 @@ The evaluation focuses on genericity, architecture, security, UX and AI-readines
 ## Local environment
 - Windows, PowerShell. .NET SDK 10.0.404, Angular CLI 22, Node 24, Python 3.13.
 - SQL Server Express instance: `localhost\SQLEXPRESS` (Windows authentication).
-  Connection string: `Server=localhost\SQLEXPRESS;Database=DataControls;Trusted_Connection=True;TrustServerCertificate=True;`
+  Connection string: `Server=localhost\SQLEXPRESS;Database=DroneOpsControls;Trusted_Connection=True;TrustServerCertificate=True;`
 - Network goes through a TLS-inspecting filter (Rimon/Netspark). npm and pip are already configured
   with `C:\certs\rimon-ca.crt`. If a tool fails with a certificate error, configure it to use that CA file;
   never disable TLS verification.
