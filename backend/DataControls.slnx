@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="DataControls.Api/DataControls.Api.csproj" />
+  <Project Path="DataControls.Application/DataControls.Application.csproj" />
+  <Project Path="DataControls.Domain/DataControls.Domain.csproj" />
+  <Project Path="DataControls.Infrastructure/DataControls.Infrastructure.csproj" />
+  <Project Path="DataControls.Tests/DataControls.Tests.csproj" />
+</Solution>
