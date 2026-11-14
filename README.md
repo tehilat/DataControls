@@ -15,6 +15,7 @@
 
 | מסמך | תוכן |
 |---|---|
+| [docs/submission.md](docs/submission.md) | מסמך ההגשה התמציתי (8 עמודים). גרסה להדפסה: `docs/submission.html`, נבנית ב-`python tools\md_to_html.py` |
 | [docs/architecture.md](docs/architecture.md) | ארכיטקטורה ומנגנון הבקרות: זרימה, ולידציה, בניית SQL, הרצה, API, שכבת ה-AI |
 | [docs/control-examples.md](docs/control-examples.md) | 14 הבקרות לדוגמה ו-3 בקרות "חיות" לדמו |
 | [docs/stage-b-ai.md](docs/stage-b-ai.md) | הדגמת שלב ב' ותכנון המשימה המתקדמת |

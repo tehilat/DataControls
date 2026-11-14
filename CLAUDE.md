@@ -92,6 +92,9 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
 - Frontend: `cd frontend && npm install && npm start` → http://localhost:4200 (needs the API on :5149).
   All calls use the relative `/api`, forwarded by `frontend/proxy.conf.json` (no CORS dependency).
   Build: `cd frontend && npx ng build` (must finish with no errors/warnings). Unit tests: `npx ng test --watch=false` (Vitest).
+- Submission doc: edit `docs/submission.md`, then `python tools/md_to_html.py` regenerates `docs/submission.html`
+  (stdlib only; RTL, page break before each "##" chapter, `<!-- same-page -->` keeps a short chapter on the current page,
+  Hebrew inside code blocks isolated with `<bdi>`). Keep it at 8 printed A4 pages.
 - Tests: `cd backend && dotnet test` (unit + API + integration; integration needs the DB from scripts 01–05 and
   skips itself if it is unreachable). Without DB: `dotnet test --filter "Category!=Integration"` (includes the
   API tests that run on the in-memory catalog via `CatalogOnlyApiFactory`).
