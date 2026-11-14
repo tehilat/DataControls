@@ -1,10 +1,13 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using DataControls.Application.Abstractions;
 using DataControls.Application.Binding;
 using DataControls.Application.Errors;
 using DataControls.Application.Querying;
 using DataControls.Application.Results;
+using DataControls.Application.Runs;
+using DataControls.Application.Formatting;
 using DataControls.Domain.Controls;
 using DataControls.Domain.Definition;
 using DataControls.Domain.Metadata;
@@ -42,6 +45,8 @@ public sealed class ControlExecutionService(
     public async Task<ControlRunResult> RunControlAsync(int controlId, int? maxRows = null, CancellationToken ct = default)
     {
         var control = await controls.GetByIdAsync(controlId, ct) ?? throw new ControlNotFoundException(controlId);
+        if (!control.IsActive)
+            throw new ConflictException($"הבקרה \"{control.Name}\" מושבתת. יש להפעיל אותה לפני הרצה.");
 
         ControlDefinition definition;
         try
@@ -69,6 +74,7 @@ public sealed class ControlExecutionService(
             stopwatch.Stop();
             var result = MapResult(bound, query, raw, catalog, runId, controlId, stopwatch.ElapsedMilliseconds);
 
+            await runs.SaveResultsAsync(runId, result.Columns, ToStored(result, query, catalog), CancellationToken.None);
             await runs.CompleteAsync(runId, ControlRunStatus.Succeeded, result.TotalCount, stopwatch.ElapsedMilliseconds, null, CancellationToken.None);
             logger.LogInformation("Control {ControlId} run {RunId}: {Count} violations in {Ms} ms",
                 controlId, runId, result.TotalCount, stopwatch.ElapsedMilliseconds);
@@ -82,6 +88,8 @@ public sealed class ControlExecutionService(
 
             await runs.CompleteAsync(runId, ControlRunStatus.Failed, null, stopwatch.ElapsedMilliseconds, message, CancellationToken.None);
             logger.LogWarning(ex, "Control {ControlId} run {RunId} failed", controlId, runId);
+            if (ex is ControlExecutionException execution)
+                throw new ControlExecutionException(execution.Message, execution.InnerException) { RunId = runId };
             throw;
         }
     }
@@ -90,7 +98,7 @@ public sealed class ControlExecutionService(
     {
         var catalog = await metadata.GetCatalogAsync(ct);
         var bound = binder.Bind(definition, catalog);
-        var query = queryBuilder.Build(bound, EffectiveMaxRows(maxRows));
+        var query = queryBuilder.Build(bound, EffectivePreviewRows(maxRows));
 
         var stopwatch = Stopwatch.StartNew();
         var raw = await runner.RunAsync(query, ct);
@@ -106,6 +114,48 @@ public sealed class ControlExecutionService(
 
     private int EffectiveMaxRows(int? requested) =>
         Math.Clamp(requested ?? options.Value.MaxRows, 1, options.Value.MaxRows);
+
+    /// <summary>Previews are always small, whoever calls them (UI or the AI flow).</summary>
+    private int EffectivePreviewRows(int? requested)
+    {
+        var limit = Math.Min(options.Value.PreviewMaxRows, options.Value.MaxRows);
+        return Math.Clamp(requested ?? options.Value.PreviewDefaultRows, 1, limit);
+    }
+
+    private const int MaxStoredReasonLength = 4000;
+    private const int MaxStoredDisplayLength = 400;
+    private const int MaxStoredIdLength = 100;
+
+    /// <summary>Rows for ctl.ControlRunViolations: canonical values + a search text in the user's terms.</summary>
+    private static List<StoredViolation> ToStored(ControlRunResult result, BuiltQuery query,
+        MetadataCatalog catalog)
+    {
+        var stored = new List<StoredViolation>(result.Violations.Count);
+        for (var i = 0; i < result.Violations.Count; i++)
+        {
+            var v = result.Violations[i];
+            var search = new StringBuilder();
+            search.Append(v.DisplayValue).Append(" | ").Append(v.Reason);
+            foreach (var column in query.Columns)
+            {
+                var value = v.Values.GetValueOrDefault(column.Field.FieldKey);
+                if (value is not null)
+                    search.Append(" | ").Append(ValueFormatter.Format(value, column.Field, catalog));
+            }
+
+            stored.Add(new StoredViolation(
+                i + 1,
+                Clip(Convert.ToString(v.Id, CultureInfo.InvariantCulture), MaxStoredIdLength),
+                Clip(v.DisplayValue, MaxStoredDisplayLength),
+                CanonicalValueJson.Serialize(v.Values, result.Columns),
+                Clip(v.Reason, MaxStoredReasonLength) ?? "",
+                search.ToString()));
+        }
+        return stored;
+    }
+
+    private static string? Clip(string? text, int max) =>
+        text is null || text.Length <= max ? text : text[..max];
 
     private ControlRunResult MapResult(BoundDefinition bound, BuiltQuery query, RawQueryResult raw,
         MetadataCatalog catalog, int? runId, int? controlId, long durationMs)

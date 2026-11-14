@@ -19,4 +19,7 @@ public sealed class Control
     public bool IsActive { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; init; }
+
+    /// <summary>Optimistic concurrency token (ctl.Controls.RowVer).</summary>
+    public byte[] RowVersion { get; init; } = [];
 }
