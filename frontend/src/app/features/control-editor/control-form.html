@@ -1,0 +1,187 @@
+<div class="editor-layout">
+  <div class="editor-main">
+    <app-problem-alert [error]="saveError()" />
+
+    <mat-card appearance="outlined" class="section-card">
+      <mat-card-header>
+        <mat-card-title>פרטי הבקרה</mat-card-title>
+        @if (source() === 'AI') {
+          <mat-card-subtitle class="ai-badge"><mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ sourceLabels.AI }} — יש לבדוק לפני שמירה</mat-card-subtitle>
+        }
+      </mat-card-header>
+      <mat-card-content class="details-grid">
+        <mat-form-field class="span-2">
+          <mat-label>שם הבקרה</mat-label>
+          <input matInput [formField]="detailsForm.name" autocomplete="off" />
+          @if ((detailsForm.name().touched() || submitted()) && detailsForm.name().errors().length) {
+            <mat-hint class="field-error" role="alert">{{ detailsForm.name().errors()[0].message }}</mat-hint>
+          } @else if (nameServerErrors().length) {
+            <mat-hint class="field-error" role="alert">{{ nameServerErrors()[0] }}</mat-hint>
+          }
+        </mat-form-field>
+
+        <mat-form-field class="span-2">
+          <mat-label>תיאור (לא חובה)</mat-label>
+          <textarea matInput [formField]="detailsForm.description" rows="2"></textarea>
+          @if (detailsForm.description().errors().length) {
+            <mat-hint class="field-error" role="alert">{{ detailsForm.description().errors()[0].message }}</mat-hint>
+          }
+        </mat-form-field>
+
+        <div class="severity">
+          <span class="field-label" id="severity-label">חומרה</span>
+          <mat-button-toggle-group
+            [value]="severity()"
+            (change)="severity.set($event.value)"
+            aria-labelledby="severity-label"
+            hideSingleSelectionIndicator
+          >
+            @for (s of severities; track s) {
+              <mat-button-toggle [value]="s">{{ severityLabels[s] }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+
+        <mat-form-field>
+          <mat-label>על איזו ישות הבקרה?</mat-label>
+          <mat-select #entitySelect [value]="rootEntity()" (selectionChange)="changeEntity($event.value, entitySelect)" required>
+            @for (e of entities(); track e.key) {
+              <mat-option [value]="e.key">{{ e.displayName }}</mat-option>
+            }
+          </mat-select>
+          @if (entity()?.description; as description) {
+            <mat-hint>{{ description }}</mat-hint>
+          } @else if (submitted() && !rootEntity()) {
+            <mat-hint class="field-error" role="alert">יש לבחור ישות.</mat-hint>
+          }
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="section-card">
+      <mat-card-header>
+        <mat-card-title>תנאי החריגה</mat-card-title>
+        <mat-card-subtitle>רשומה שעומדת בתנאים תוצג כחריגה</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (!rootEntity()) {
+          <p class="muted empty-state"><mat-icon aria-hidden="true">arrow_upward</mat-icon> יש לבחור ישות כדי להגדיר תנאים.</p>
+        } @else if (fieldsResource.isLoading()) {
+          <mat-progress-bar mode="indeterminate" aria-label="טוען שדות" />
+        } @else if (fieldsResource.error()) {
+          <p class="field-error" role="alert">לא ניתן לטעון את שדות הישות.</p>
+        } @else {
+          <app-condition-group [group]="tree()" path="condition" [depth]="1" (groupChange)="tree.set($event)" />
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <aside class="editor-side" aria-label="תקציר ובדיקה">
+    <mat-card appearance="outlined" class="section-card">
+      <mat-card-header>
+        <mat-card-title>תקציר בעברית</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="summary" aria-live="polite">{{ summary() }}</p>
+        <p class="muted small">{{ ruleCount() }} תנאים</p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="section-card">
+      <mat-card-content>
+        <div class="validation" aria-live="polite">
+          @switch (validation().state) {
+            @case ('checking') {
+              <mat-spinner diameter="18" aria-hidden="true" /><span>בודק את ההגדרה…</span>
+            }
+            @case ('valid') {
+              <mat-icon class="ok" aria-hidden="true">check_circle</mat-icon><span>ההגדרה תקינה</span>
+            }
+            @case ('incomplete') {
+              <mat-icon class="warn" aria-hidden="true">pending</mat-icon><span>ההגדרה עדיין לא הושלמה</span>
+            }
+            @case ('invalid') {
+              <mat-icon class="bad" aria-hidden="true">error</mat-icon><span>נמצאו שגיאות בהגדרה</span>
+            }
+            @case ('error') {
+              <mat-icon class="bad" aria-hidden="true">cloud_off</mat-icon><span>לא ניתן לבדוק את ההגדרה כרגע</span>
+            }
+            @default {
+              <mat-icon class="muted" aria-hidden="true">rule</mat-icon><span class="muted">ההגדרה תיבדק תוך כדי עריכה</span>
+            }
+          }
+        </div>
+        @if (validation(); as v) {
+          @if (v.state === 'invalid') {
+            <ul class="error-list">
+              @for (e of v.errors; track $index) {
+                <li><span class="error-location">{{ location(e.path) }}:</span> {{ e.message }}</li>
+              }
+            </ul>
+          } @else if (v.state === 'error') {
+            <p class="small muted">{{ v.error.title }}</p>
+          }
+        }
+        @if (submitted() && issues().length) {
+          <ul class="error-list">
+            @for (e of issues(); track $index) {
+              <li><span class="error-location">{{ location(e.path) }}:</span> {{ e.message }}</li>
+            }
+          </ul>
+        }
+
+        <div class="side-actions">
+          <button mat-stroked-button type="button" (click)="runPreview()" [disabled]="!canPreview()">
+            <mat-icon>visibility</mat-icon>
+            תצוגה מקדימה
+          </button>
+          <button mat-flat-button type="button" (click)="save()" [disabled]="saving()">
+            <mat-icon>save</mat-icon>
+            {{ controlId() === null ? 'שמירת הבקרה' : 'שמירת השינויים' }}
+          </button>
+          <button mat-button type="button" (click)="cancelled.emit()">ביטול</button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </aside>
+</div>
+
+@if (previewing() || preview() || previewError()) {
+  <mat-card appearance="outlined" class="section-card preview-card">
+    <mat-card-header>
+      <mat-card-title>תצוגה מקדימה</mat-card-title>
+      <mat-card-subtitle>הרצה של ההגדרה הנוכחית בלי לשמור — עד 50 רשומות ראשונות</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (previewing()) {
+        <mat-progress-bar mode="indeterminate" aria-label="מריץ תצוגה מקדימה" />
+      }
+      <app-problem-alert [error]="previewError()" />
+      @if (preview(); as p) {
+        @if (previewStale()) {
+          <p class="alert alert-warn" role="status">
+            <mat-icon aria-hidden="true">update</mat-icon> ההגדרה השתנתה מאז התצוגה המקדימה. יש להריץ אותה שוב.
+          </p>
+        }
+        <div class="preview-stats">
+          <span class="big-number" [class.zero]="p.totalCount === 0">{{ p.totalCount }}</span>
+          <span>
+            {{ p.rootEntityDisplayNamePlural }} חריגים
+            @if (p.truncated) {
+              <span class="muted">(מוצגות {{ p.items.length }} הראשונות)</span>
+            }
+          </span>
+          <span class="muted small">משך: {{ formatDuration(p.durationMs) }}</span>
+        </div>
+        <app-results-table
+          [columns]="p.columns"
+          [rows]="p.items"
+          [options]="previewOptions()"
+          caption="תצוגה מקדימה של הרשומות החריגות"
+          emptyText="לא נמצאו רשומות חריגות — כל הנתונים עומדים בבקרה"
+        />
+      }
+    </mat-card-content>
+  </mat-card>
+}

@@ -1,0 +1,156 @@
+<div class="page-header">
+  <h1>בקרות נתונים</h1>
+  <span class="spacer"></span>
+  <a mat-stroked-button routerLink="/controls/ai" class="ai-button">
+    <mat-icon>auto_awesome</mat-icon>
+    צור בעזרת AI
+  </a>
+  <a mat-flat-button routerLink="/controls/new">
+    <mat-icon>add</mat-icon>
+    בקרה חדשה
+  </a>
+</div>
+
+<div class="toolbar" role="search">
+  <mat-form-field class="search" subscriptSizing="dynamic">
+    <mat-label>חיפוש לפי שם או תיאור</mat-label>
+    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+    <input matInput [value]="search()" (input)="search.set($any($event.target).value)" autocomplete="off" />
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>ישות</mat-label>
+    <mat-select [value]="entityFilter()" (selectionChange)="entityFilter.set($event.value)">
+      <mat-option value="">כל הישויות</mat-option>
+      @for (e of entities(); track e.key) {
+        <mat-option [value]="e.key">{{ e.displayName }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>מצב</mat-label>
+    <mat-select [value]="activeFilter()" (selectionChange)="activeFilter.set($event.value)">
+      <mat-option value="all">הכול</mat-option>
+      <mat-option value="active">פעילות</mat-option>
+      <mat-option value="inactive">מושבתות</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  @if (hasFilters()) {
+    <button mat-button type="button" (click)="clearFilters()">
+      <mat-icon>filter_alt_off</mat-icon>
+      ניקוי סינון
+    </button>
+  }
+</div>
+
+<app-problem-alert [error]="loadError()" />
+
+<div class="table-card">
+  @if (controls.isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="טוען בקרות" />
+  }
+  <div class="table-scroll">
+    <table mat-table [dataSource]="rows()" class="controls-table">
+      <caption class="cdk-visually-hidden">רשימת הבקרות ({{ rows().length }})</caption>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef scope="col">בקרה</th>
+        <td mat-cell *matCellDef="let c">
+          <a class="control-name" [routerLink]="['/controls', c.id, 'edit']">{{ c.name }}</a>
+          @if (c.source === 'AI') {
+            <mat-icon class="ai-icon" matTooltip="נוצרה בעזרת AI" aria-label="נוצרה בעזרת AI">auto_awesome</mat-icon>
+          }
+          @if (c.description) {
+            <div class="muted small description">{{ c.description }}</div>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="entity">
+        <th mat-header-cell *matHeaderCellDef scope="col" class="hide-sm">ישות</th>
+        <td mat-cell *matCellDef="let c" class="hide-sm">{{ c.rootEntityDisplayName ?? c.rootEntity }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="severity">
+        <th mat-header-cell *matHeaderCellDef scope="col" class="hide-sm">חומרה</th>
+        <td mat-cell *matCellDef="let c" class="hide-sm"><app-severity-chip [severity]="c.severity" /></td>
+      </ng-container>
+
+      <ng-container matColumnDef="lastRun">
+        <th mat-header-cell *matHeaderCellDef scope="col">הרצה אחרונה</th>
+        <td mat-cell *matCellDef="let c">
+          @if (c.lastRun; as r) {
+            <a class="last-run" [routerLink]="['/runs', r.runId]" [attr.aria-label]="'תוצאות ההרצה האחרונה של ' + c.name">
+              <app-run-status-chip [status]="r.status" />
+              @if (r.violationCount !== null) {
+                <span class="violations" [class.zero]="r.violationCount === 0">{{ r.violationCount }} חריגות</span>
+              }
+            </a>
+            <div class="muted small">{{ r.startedAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+          } @else {
+            <span class="muted">טרם הורצה</span>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="active">
+        <th mat-header-cell *matHeaderCellDef scope="col" class="hide-sm">מצב</th>
+        <td mat-cell *matCellDef="let c" class="hide-sm">
+          <span class="chip" [class.status-succeeded]="c.isActive" [class.chip-muted]="!c.isActive">
+            {{ c.isActive ? 'פעילה' : 'מושבתת' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef scope="col"><span class="cdk-visually-hidden">פעולות</span></th>
+        <td mat-cell *matCellDef="let c" class="actions-cell">
+          @if (isBusy(c.id)) {
+            <mat-spinner diameter="24" aria-label="מבצע פעולה" />
+          } @else {
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="run(c)"
+              [disabled]="!c.isActive"
+              [matTooltip]="c.isActive ? 'הרצת הבקרה עכשיו' : 'בקרה מושבתת — יש להפעיל אותה כדי להריץ'"
+              [attr.aria-label]="'הרצת ' + c.name"
+            >
+              <mat-icon>play_arrow</mat-icon>
+              הרצה
+            </button>
+          }
+          <button mat-icon-button type="button" [matMenuTriggerFor]="menu" [attr.aria-label]="'פעולות נוספות עבור ' + c.name">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu" xPosition="before">
+            <a mat-menu-item [routerLink]="['/controls', c.id, 'edit']"><mat-icon>edit</mat-icon>עריכה</a>
+            <a mat-menu-item routerLink="/controls/new" [queryParams]="{ copyFrom: c.id }"><mat-icon>content_copy</mat-icon>שכפול</a>
+            <a mat-menu-item routerLink="/runs" [queryParams]="{ controlId: c.id }"><mat-icon>history</mat-icon>היסטוריית הרצות</a>
+            <mat-divider />
+            @if (c.isActive) {
+              <button mat-menu-item type="button" (click)="toggleActive(c)"><mat-icon>pause_circle</mat-icon>השבתה</button>
+            } @else {
+              <button mat-menu-item type="button" (click)="toggleActive(c)"><mat-icon>play_circle</mat-icon>הפעלה</button>
+            }
+            @if (!c.lastRun) {
+              <button mat-menu-item type="button" (click)="remove(c)" class="danger-text"><mat-icon>delete</mat-icon>מחיקה</button>
+            }
+          </mat-menu>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let c; columns: columns" [class.inactive-row]="!c.isActive"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty-cell" [attr.colspan]="columns.length">
+          @if (!controls.isLoading()) {
+            {{ hasFilters() ? 'לא נמצאו בקרות שמתאימות לסינון.' : 'עדיין לא הוגדרו בקרות.' }}
+          }
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

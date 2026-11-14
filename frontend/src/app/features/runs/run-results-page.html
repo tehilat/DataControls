@@ -1,0 +1,153 @@
+<div class="page-header">
+  <a mat-icon-button routerLink="/controls" aria-label="חזרה לרשימת הבקרות"><mat-icon>arrow_forward</mat-icon></a>
+  <h1>תוצאות הרצה</h1>
+</div>
+
+@if (run.isLoading() && !run.value()) {
+  <mat-progress-bar mode="indeterminate" aria-label="טוען את ההרצה" />
+}
+<app-problem-alert [error]="runError()" />
+
+@if (run.value(); as r) {
+  <section class="summary-card" aria-labelledby="run-title">
+    <div class="summary-main">
+      <h2 id="run-title" class="control-title">
+        {{ r.controlName }}
+        @if (control.value(); as c) {
+          <app-severity-chip [severity]="c.severity" />
+        }
+      </h2>
+      <div class="meta">
+        <app-run-status-chip [status]="r.status" />
+        <span><mat-icon aria-hidden="true">event</mat-icon>{{ r.startedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+        <span><mat-icon aria-hidden="true">timer</mat-icon>{{ formatDuration(r.durationMs) }}</span>
+        @if (control.value(); as c) {
+          <span><mat-icon aria-hidden="true">dataset</mat-icon>{{ c.rootEntityDisplayName ?? c.rootEntity }}</span>
+        }
+      </div>
+      @if (r.errorMessage) {
+        <div class="alert alert-error" role="alert"><mat-icon aria-hidden="true">error_outline</mat-icon>{{ r.errorMessage }}</div>
+      }
+      @if (r.truncated) {
+        <div class="alert alert-warn" role="status">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          נמצאו {{ r.violationCount }} חריגות; נשמרו ומוצגות {{ r.storedCount }} הראשונות.
+        </div>
+      }
+      <div class="summary-actions">
+        <button mat-flat-button type="button" (click)="rerun()" [disabled]="rerunning() || control.value()?.isActive === false"
+          [matTooltip]="control.value()?.isActive === false ? 'הבקרה מושבתת' : ''">
+          <mat-icon>replay</mat-icon>
+          הרצה חוזרת
+        </button>
+        <a mat-stroked-button [routerLink]="['/controls', r.controlId, 'edit']">
+          <mat-icon>edit</mat-icon>
+          עריכת הבקרה
+        </a>
+      </div>
+    </div>
+    <div class="count-box" [class.zero]="r.violationCount === 0" [class.failed]="r.status === 'Failed'">
+      <span class="count">{{ r.violationCount ?? '—' }}</span>
+      <span class="count-label">{{ r.violationCount === 0 ? 'אין חריגות' : 'רשומות חריגות' }}</span>
+    </div>
+  </section>
+
+  <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" class="run-tabs">
+    <mat-tab label="רשומות חריגות">
+      @if (r.status === 'Succeeded') {
+        <div class="toolbar" role="search">
+          <mat-form-field class="search" subscriptSizing="dynamic">
+            <mat-label>חיפוש ברשומות ובסיבות</mat-label>
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+            <input matInput [value]="search()" (input)="search.set($any($event.target).value)" autocomplete="off" />
+          </mat-form-field>
+
+          <div class="filter-composer">
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label>סינון לפי שדה</mat-label>
+              <mat-select [value]="filterKey()" (selectionChange)="filterKey.set($event.value)">
+                @for (c of columns(); track c.key) {
+                  <mat-option [value]="c.key">{{ columnLabel(c) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            @if (filterColumn(); as fc) {
+              <div class="filter-value">
+                <app-value-input
+                  [dataType]="fc.dataType"
+                  [unit]="fc.unit"
+                  [options]="options().get(fc.key) ?? []"
+                  [value]="filterValue()"
+                  label="ערך"
+                  (valueChange)="filterValue.set($event)"
+                />
+              </div>
+              <button mat-stroked-button type="button" (click)="addFilter()" [disabled]="filterValue() === null">
+                <mat-icon>filter_alt</mat-icon>
+                החלה
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (filters().length || search()) {
+          <div class="active-filters">
+            <mat-chip-set aria-label="מסננים פעילים">
+              @for (f of filters(); track f.key) {
+                <mat-chip (removed)="removeFilter(f.key)">
+                  {{ f.label }}
+                  <button matChipRemove [attr.aria-label]="'הסרת הסינון ' + f.label"><mat-icon>cancel</mat-icon></button>
+                </mat-chip>
+              }
+            </mat-chip-set>
+            <button mat-button type="button" (click)="clearQuery()">ניקוי הכול</button>
+          </div>
+        }
+
+        <app-problem-alert [error]="violationsError()" />
+
+        <div class="table-card">
+          @if (violations.isLoading()) {
+            <mat-progress-bar mode="indeterminate" aria-label="טוען רשומות" />
+          }
+          <div class="result-count muted small" aria-live="polite">
+            @if (hasQuery()) {
+              {{ page().totalCount }} רשומות תואמות מתוך {{ r.storedCount }}
+            } @else {
+              {{ page().totalCount }} רשומות
+            }
+          </div>
+          <app-results-table
+            [columns]="columns()"
+            [rows]="page().items"
+            [options]="options()"
+            [sortable]="true"
+            [sort]="sort()"
+            (sortChange)="sort.set($event)"
+            caption="הרשומות החריגות בהרצה"
+            [emptyText]="hasQuery() ? 'אין רשומות שמתאימות לחיפוש או לסינון' : 'לא נמצאו רשומות חריגות — כל הנתונים עומדים בבקרה'"
+          />
+          <mat-paginator
+            [length]="page().totalCount"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize()"
+            [pageSizeOptions]="[10, 25, 50, 100, 200]"
+            showFirstLastButtons
+            (page)="onPage($event)"
+            aria-label="דפדוף ברשומות החריגות"
+          />
+        </div>
+      } @else if (r.status === 'Running') {
+        <p class="muted tab-message">ההרצה עדיין מתבצעת או הופסקה באמצע.</p>
+      } @else {
+        <p class="muted tab-message">ההרצה נכשלה ולכן אין רשומות להצגה.</p>
+      }
+    </mat-tab>
+
+    <mat-tab label="היסטוריית הרצות של הבקרה">
+      <ng-template matTabContent>
+        <app-run-history [controlId]="r.controlId" [currentRunId]="r.runId" />
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
+}

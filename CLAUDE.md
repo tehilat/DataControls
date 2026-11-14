@@ -1,4 +1,6 @@
-# CLAUDE.md — Data Controls System (מערכת בקרות נתונים דינאמית)
+# CLAUDE.md — רדאר - בקרות איכות נתונים (Data Controls System)
+
+The product name shown to users is **"רדאר - בקרות איכות נתונים"** (icon: Material `radar`).
 
 ## Project goal
 A generic web system that lets non-technical business users define data-quality controls
@@ -82,7 +84,9 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
   `Metadata:{AllowedSchemas,CacheSeconds}`, `Cors:AllowedOrigins` (default `http://localhost:4200`).
   `DataControls.Api.http` has sample requests.
 - AI service: `cd ai-service && .venv\Scripts\activate && uvicorn main:app --reload --port 8001`
-- Frontend: `cd frontend && npm start`
+- Frontend: `cd frontend && npm install && npm start` → http://localhost:4200 (needs the API on :5149).
+  All calls use the relative `/api`, forwarded by `frontend/proxy.conf.json` (no CORS dependency).
+  Build: `cd frontend && npx ng build` (must finish with no errors/warnings). Unit tests: `npx ng test --watch=false` (Vitest).
 - Tests: `cd backend && dotnet test` (unit + API + integration; integration needs the DB from scripts 01–05 and
   skips itself if it is unreachable). Without DB: `dotnet test --filter "Category!=Integration"` (includes the
   API tests that run on the in-memory catalog via `CatalogOnlyApiFactory`).
@@ -102,6 +106,19 @@ See `docs/architecture.md` ("שכבת ה-API", "הנחות ומגבלות"). Con
 `ctl.ControlRunViolations` in canonical JSON (`CanonicalValueJson`); typed sort/filter use a fixed set of
 `TRY_CONVERT` expressions (`TypedJsonValue`), keys must be in the run's column snapshot. Errors are Hebrew
 ProblemDetails (`ApiExceptionHandler`, `ModelStateProblems`) with JSON paths. `GeneratedSql` is never exposed.
+
+## Frontend (implemented)
+See `docs/architecture.md` ("Frontend") and `frontend/README.md`. Angular 22 zoneless, standalone, signals, Angular Material (M3, Heebo),
+lazy routes: `/controls`, `/controls/new` (`?copyFrom=id` duplicate, `?draft=1` take a definition from `ControlDraftService`),
+`/controls/:id/edit`, `/controls/ai` (stage-B placeholder), `/runs` (`?controlId=`), `/runs/:runId`.
+- `core/api`: typed DTOs + `MetadataApi`/`ControlsApi`/`RunsApi`; `apiErrorInterceptor` turns every failure into `ApiError`
+  (Hebrew ProblemDetails, `validationErrors` with JSON paths, `runId`). `ProblemAlert` shows it; `describePath` turns a path into "תנאי 2 › 1".
+- `core/definition`: wire model + editor tree (ids), conversion, local completeness checks with server-style paths, Hebrew summary.
+- Condition builder: `ConditionContext` (per form: fields, operators, errors) → recursive `condition-group` ↔ `condition-rule`
+  → shared `field-picker` (grouped by relation path, searchable), `operator-select`, `value-input` (by type), `operand-editor`
+  (value / other field / today ± days / now). Errors from `controls/validate` (debounced) and from save are shown on the rule by path.
+- `ControlForm` is reusable and takes a `seed` (`ControlSeed`) — stage B should hand the AI suggestion to it (source `AI`).
+- Results: `results-table` (generic columns from the run, list values by name, server-side sort), typed filters (canonical values), paging.
 
 ## Working agreement with Claude
 - Plan before coding; work in small steps, one layer at a time.
