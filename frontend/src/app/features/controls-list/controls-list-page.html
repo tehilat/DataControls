@@ -119,7 +119,10 @@
               [matTooltip]="c.isActive ? 'הרצת הבקרה עכשיו' : 'בקרה מושבתת — יש להפעיל אותה כדי להריץ'"
               [attr.aria-label]="'הרצת ' + c.name"
             >
-              <mat-icon>play_arrow</mat-icon>
+              <!-- soft play triangle (rounded corners) instead of the font icon's sharp one -->
+              <svg class="run-icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+                <path d="M3.2 1.9v8.2c0 .6.65.95 1.15.62l6.1-4.1a.75.75 0 0 0 0-1.24l-6.1-4.1C3.85.95 3.2 1.3 3.2 1.9Z" />
+              </svg>
               הרצה
             </button>
           }
