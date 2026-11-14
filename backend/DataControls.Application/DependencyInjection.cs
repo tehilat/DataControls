@@ -1,3 +1,4 @@
+using DataControls.Application.Ai;
 using DataControls.Application.Binding;
 using DataControls.Application.Catalog;
 using DataControls.Application.Controls;
@@ -18,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<IBusinessCatalogService, BusinessCatalogService>();
         services.AddScoped<IControlService, ControlService>();
         services.AddScoped<IRunService, RunService>();
+        services.AddScoped<IAiSuggestionService, AiSuggestionService>();
         return services;
     }
 }

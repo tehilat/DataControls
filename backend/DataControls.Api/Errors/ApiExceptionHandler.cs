@@ -23,6 +23,7 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problemDetails, I
             ConflictException ex => WithPath(Problems.Create(StatusCodes.Status409Conflict, ProblemTitles.Conflict, ex.Message), ex.Path),
             ControlExecutionException ex => WithRunId(
                 Problems.Create(StatusCodes.Status422UnprocessableEntity, ProblemTitles.ExecutionFailed, ex.Message), ex.RunId),
+            AiServiceUnavailableException ex => Problems.Create(StatusCodes.Status503ServiceUnavailable, ProblemTitles.AiUnavailable, ex.Message),
             BadHttpRequestException ex => Problems.Create(ex.StatusCode, ProblemTitles.InvalidRequest, ProblemTitles.InvalidRequest),
             OperationCanceledException when context.RequestAborted.IsCancellationRequested => null,
             _ => null
@@ -66,6 +67,7 @@ public static class ProblemTitles
     public const string Conflict = "הפעולה מתנגשת במצב הנוכחי";
     public const string ExecutionFailed = "הרצת הבקרה נכשלה";
     public const string ServerError = "שגיאת שרת";
+    public const string AiUnavailable = "שירות ה-AI אינו זמין";
 
     public static string ForStatus(int status) => status switch
     {
@@ -77,6 +79,7 @@ public static class ProblemTitles
         409 => Conflict,
         415 => "סוג התוכן אינו נתמך (יש לשלוח JSON)",
         422 => ExecutionFailed,
+        503 => "השירות אינו זמין כרגע",
         _ when status >= 500 => ServerError,
         _ => "שגיאה"
     };

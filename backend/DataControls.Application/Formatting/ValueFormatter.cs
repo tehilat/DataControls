@@ -41,6 +41,13 @@ public static class ValueFormatter
 
     public const string NowText = "עכשיו";
 
+    /// <summary>Hebrew prefix prepositions attach with a hyphen: "גדול מ-5", "שווה ל-\"חיפה\"".</summary>
+    public static string JoinOperator(string op, string operand)
+    {
+        var lastWord = op.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+        return lastWord is "מ" or "ל" or "ב" ? $"{op}-{operand}" : $"{op} {operand}";
+    }
+
     private static string FormatDate(object value) => value switch
     {
         DateTime d => d.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),

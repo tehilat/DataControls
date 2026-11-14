@@ -83,7 +83,11 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
   `ControlExecution:{MaxRows,CommandTimeoutSeconds,RunnerUser,PreviewMaxRows,PreviewDefaultRows}`,
   `Metadata:{AllowedSchemas,CacheSeconds}`, `Cors:AllowedOrigins` (default `http://localhost:4200`).
   `DataControls.Api.http` has sample requests.
-- AI service: `cd ai-service && .venv\Scripts\activate && uvicorn main:app --reload --port 8001`
+- AI service (optional; without it only `/api/ai/*` fails, with 503):
+  first time: `cd ai-service && python -m venv .venv && .venv\Scripts\activate && pip install -r requirements-dev.txt`;
+  run: `cd ai-service && .venv\Scripts\activate && uvicorn main:app --reload --port 8001` (Swagger at `/docs`);
+  tests: `cd ai-service && .venv\Scripts\python -m pytest`. Env `AI_PROVIDER` (default `mock`).
+  The API reaches it via `AiService:{BaseUrl,TimeoutSeconds}` (default `http://localhost:8001`, 30s).
 - Frontend: `cd frontend && npm install && npm start` → http://localhost:4200 (needs the API on :5149).
   All calls use the relative `/api`, forwarded by `frontend/proxy.conf.json` (no CORS dependency).
   Build: `cd frontend && npx ng build` (must finish with no errors/warnings). Unit tests: `npx ng test --watch=false` (Vitest).
@@ -119,6 +123,16 @@ lazy routes: `/controls`, `/controls/new` (`?copyFrom=id` duplicate, `?draft=1` 
   (value / other field / today ± days / now). Errors from `controls/validate` (debounced) and from save are shown on the rule by path.
 - `ControlForm` is reusable and takes a `seed` (`ControlSeed`) — stage B should hand the AI suggestion to it (source `AI`).
 - Results: `results-table` (generic columns from the run, list values by name, server-side sort), typed filters (canonical values), paging.
+
+## AI layer (implemented)
+See `docs/architecture.md` ("שכבת ה-AI") and `ai-service/README.md`. `POST /api/ai/suggest-control {text}` →
+`AiSuggestionService` builds the business catalog (`IBusinessCatalogService`, flattened field paths, no physical names),
+calls `IAiControlGenerator` (`HttpAiControlGenerator` → Python `/generate-control`), then parses + binds the answer with the
+same `ControlDefinitionSerializer` / `DefinitionBinder` as manual definitions and adds a Hebrew `summary`
+(`DefinitionSummaryBuilder`). It never saves or runs (no repository/runner dependency); the user saves via
+`POST /api/controls` with source `AI`. `GET /api/ai/prompt-preview?text=` shows the model prompt. AI down → 503 ProblemDetails.
+Python side: `AiProvider` interface, data-driven `MockProvider` (`mock_scenarios.json`), `PromptBuilder`, catalog validation.
+Swapping the model = new `AiProvider` in Python + `AI_PROVIDER`; no .NET change.
 
 ## Working agreement with Claude
 - Plan before coding; work in small steps, one layer at a time.

@@ -1,0 +1,125 @@
+{
+  "_comment": "Canned answers of MockProvider. 'match' = keyword groups; every group must match (any term in it, regex). The most specific scenario (most groups) wins. Definitions use business keys of the catalog only and are validated against the catalog sent with each request.",
+  "scenarios": [
+    {
+      "id": "weight-over-payload",
+      "example": "משלוחים שמשקל החבילה בהם מעל כושר הנשיאה של הרחפן",
+      "match": [["משקל", "כבד"], ["כושר נשיאה", "נשיאה", "מטען מרבי", "משקל מרבי"]],
+      "definition": {
+        "version": 1,
+        "rootEntity": "Delivery",
+        "condition": {
+          "type": "rule", "field": "PackageWeightKg", "operator": "gt",
+          "compareTo": { "kind": "field", "field": "Drone.MaxPayloadKg" }
+        }
+      },
+      "explanation": "הבקרה תאתר משלוחים שבהם משקל החבילה גבוה מכושר הנשיאה של הרחפן שביצע את המשלוח.",
+      "confidence": 0.92
+    },
+    {
+      "id": "active-drone-closed-hub",
+      "example": "רחפן פעיל במוקד סגור",
+      "match": [["רחפן"], ["מוקד"], ["סגור", "נסגר", "לא פעיל", "אינו פעיל", "מושבת"]],
+      "definition": {
+        "version": 1,
+        "rootEntity": "Drone",
+        "condition": {
+          "type": "group", "logic": "AND",
+          "children": [
+            { "type": "rule", "field": "Status", "operator": "eq", "compareTo": { "kind": "value", "value": "Active" } },
+            { "type": "rule", "field": "Hub.IsActive", "operator": "eq", "compareTo": { "kind": "value", "value": false } }
+          ]
+        }
+      },
+      "explanation": "הבקרה תאתר רחפנים בסטטוס \"בשירות\" שמשויכים למוקד שאינו פעיל.",
+      "confidence": 0.9,
+      "warnings": ["\"רחפן פעיל\" פורש כרחפן בסטטוס \"בשירות\"."]
+    },
+    {
+      "id": "customer-without-contact",
+      "example": "לקוח בלי טלפון ובלי אימייל",
+      "match": [["לקוח"], ["טלפון", "נייד"], ["מייל", "דואל", "email"], ["בלי", "ללא", "אין", "חסר", "ריק"]],
+      "definition": {
+        "version": 1,
+        "rootEntity": "Customer",
+        "condition": {
+          "type": "group", "logic": "AND",
+          "children": [
+            { "type": "rule", "field": "Phone", "operator": "isEmpty" },
+            { "type": "rule", "field": "Email", "operator": "isEmpty" }
+          ]
+        }
+      },
+      "explanation": "הבקרה תאתר לקוחות שאין להם מספר טלפון וגם אין להם כתובת אימייל.",
+      "confidence": 0.95
+    },
+    {
+      "id": "late-delivery",
+      "example": "משלוח באיחור",
+      "match": [["משלוח", "חביל"], ["איחור", "מאחר", "מאוחר", "מתעכב", "עיכוב", "תקוע"]],
+      "definition": {
+        "version": 1,
+        "rootEntity": "Delivery",
+        "condition": {
+          "type": "group", "logic": "AND",
+          "children": [
+            { "type": "rule", "field": "Status", "operator": "eq", "compareTo": { "kind": "value", "value": "InTransit" } },
+            { "type": "rule", "field": "DispatchedAt", "operator": "lt", "compareTo": { "kind": "today", "offsetDays": -1 } }
+          ]
+        }
+      },
+      "explanation": "הבקרה תאתר משלוחים שעדיין בסטטוס \"בדרך\" למרות שיצאו לפני יותר מיממה (לפני אתמול).",
+      "confidence": 0.6,
+      "warnings": [
+        "בנתונים אין מועד מסירה מתוכנן, ולכן \"באיחור\" פורש כמשלוח שנמצא בדרך יותר מיממה.",
+        "מומלץ לבדוק את מספר הימים לפני השמירה ולעדכן לפי הצורך העסקי."
+      ]
+    },
+    {
+      "id": "pilot-expired-license",
+      "example": "מפעיל עם רישיון שפג",
+      "match": [["מפעיל", "טייס"], ["רישיון", "רשיון"], ["פג", "פקע", "לא בתוקף", "תוקף"]],
+      "definition": {
+        "version": 1,
+        "rootEntity": "Pilot",
+        "condition": {
+          "type": "rule", "field": "LicenseExpiry", "operator": "lt",
+          "compareTo": { "kind": "today", "offsetDays": 0 }
+        }
+      },
+      "explanation": "הבקרה תאתר מפעילים שתאריך תוקף הרישיון שלהם קודם להיום.",
+      "confidence": 0.88,
+      "warnings": ["מפעילים ללא תאריך תוקף לרישיון לא ייתפסו בבקרה זו."]
+    },
+    {
+      "id": "delivery-by-expired-license",
+      "example": "משלוחים שבוצעו ע\"י מפעיל שהרישיון שלו פג לפני היציאה",
+      "match": [["משלוח"], ["מפעיל", "טייס"], ["רישיון", "רשיון"], ["פג", "פקע", "לא בתוקף", "תוקף"]],
+      "definition": {
+        "version": 1,
+        "rootEntity": "Delivery",
+        "condition": {
+          "type": "rule", "field": "Pilot.LicenseExpiry", "operator": "lt",
+          "compareTo": { "kind": "field", "field": "DispatchedAt" }
+        }
+      },
+      "explanation": "הבקרה תאתר משלוחים שבהם תוקף הרישיון של המפעיל פג לפני זמן היציאה של המשלוח.",
+      "confidence": 0.85
+    },
+    {
+      "id": "negative-weight",
+      "example": "משלוחים עם משקל חבילה שלילי",
+      "match": [["משקל"], ["שלילי", "מתחת לאפס", "קטן מאפס", "פחות מאפס"]],
+      "definition": {
+        "version": 1,
+        "rootEntity": "Delivery",
+        "condition": {
+          "type": "rule", "field": "PackageWeightKg", "operator": "lt",
+          "compareTo": { "kind": "value", "value": 0 }
+        }
+      },
+      "explanation": "הבקרה תאתר משלוחים שבהם משקל החבילה קטן מאפס.",
+      "confidence": 0.93
+    }
+  ]
+}

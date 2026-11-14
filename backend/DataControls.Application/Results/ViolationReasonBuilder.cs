@@ -84,14 +84,7 @@ public sealed class ViolationReasonBuilder
                 ? $"{name}: {actual}"
                 : $"{name}: {actual} ({op} {expected})";
 
-        return $"{name} ({actual}) {JoinOperator(op, expected)}";
-    }
-
-    /// <summary>Hebrew prefix prepositions attach with a hyphen: "גדול מ-5", "שווה ל-\"חיפה\"".</summary>
-    private static string JoinOperator(string op, string operand)
-    {
-        var lastWord = op.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
-        return lastWord is "מ" or "ל" or "ב" ? $"{op}-{operand}" : $"{op} {operand}";
+        return $"{name} ({actual}) {ValueFormatter.JoinOperator(op, expected)}";
     }
 
     private static object? Get(IReadOnlyDictionary<string, object?> row, string alias) =>

@@ -53,3 +53,14 @@ public sealed class ControlExecutionException(string message, Exception? inner =
     /// <summary>The recorded run (ctl.ControlRuns) when the failure happened in a saved-control run.</summary>
     public int? RunId { get; init; }
 }
+
+/// <summary>
+/// The AI service is unreachable, timed out or returned an unusable answer. Message is user-facing (Hebrew).
+/// Controls can still be defined manually — nothing else in the system depends on the AI service.
+/// </summary>
+public sealed class AiServiceUnavailableException(string message, Exception? inner = null)
+    : Exception(message, inner)
+{
+    public const string DefaultMessage =
+        "שירות ה-AI אינו זמין כרגע. ניתן לנסות שוב מאוחר יותר או להגדיר את הבקרה ידנית.";
+}
