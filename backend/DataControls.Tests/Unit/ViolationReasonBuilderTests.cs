@@ -1,4 +1,4 @@
-using DataControls.Application.Results;
+﻿using DataControls.Application.Results;
 using DataControls.Tests.Support;
 using static DataControls.Tests.Support.Defs;
 
@@ -21,7 +21,7 @@ public class ViolationReasonBuilderTests
 
     [Fact]
     public void And_group_explains_every_condition() =>
-        Assert.Equal("טלפון ריק וגם אימייל ריק",
+        Assert.Equal("טלפון: חסר ערך וגם אימייל: חסר ערך",
             Reason(DatabaseScripts.SampleDefinitions()[8], ("__f0", null), ("__r0", 1), ("__f1", "  "), ("__r1", 1)));
 
     [Fact]
@@ -31,7 +31,7 @@ public class ViolationReasonBuilderTests
             ("__f0", "Failed"), ("__r0", 0), ("__f1", null), ("__r1", 1),
             ("__f2", "Failed"), ("__r2", 1), ("__f3", new DateTime(2026, 3, 1, 10, 15, 0)), ("__r3", 1));
 
-        Assert.Equal("סטטוס משלוח: נכשל וגם זמן מסירה לא ריק (01/03/2026 10:15)", reason);
+        Assert.Equal("סטטוס משלוח: נכשל וגם זמן מסירה: קיים ערך", reason);
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public class ViolationReasonBuilderTests
                 Rule("PackageWeightKg", "lt", Value("0")))),
             ("__f0", "Delivered"), ("__r0", 1), ("__f1", null), ("__r1", 1), ("__f2", -1m), ("__r2", 1));
 
-        Assert.Equal("(סטטוס משלוח: נמסר וגם זמן מסירה ריק) או משקל חבילה (-1 ק\"ג) קטן מ-0 ק\"ג", reason);
+        Assert.Equal("(סטטוס משלוח: נמסר וגם זמן מסירה: חסר ערך) או משקל חבילה (-1 ק\"ג) קטן מ-0 ק\"ג", reason);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class ViolationReasonBuilderTests
     {
         Assert.Equal("עיר (\"חיפה\") שווה ל-\"חיפה\"",
             Reason(Json("Customer", Rule("City", "eq", Value("\"חיפה\""))), ("__f0", "חיפה"), ("__r0", 1)));
-        Assert.Equal("כתובת ריק",
+        Assert.Equal("כתובת: חסר ערך",
             Reason(Json("Customer", Rule("Address", "isEmpty")), ("__f0", "   "), ("__r0", 1)));
     }
 }

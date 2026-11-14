@@ -8,6 +8,19 @@
 .violations { font-weight: 600; color: var(--app-danger-text); }
 .violations.zero { color: var(--app-success-text); }
 .actions-cell { white-space: nowrap; text-align: end; }
+// compact, quiet run button: small height, light outline, navy label
+.run-button {
+  --mat-button-outlined-container-height: 30px;
+  --mat-button-outlined-horizontal-padding: 10px;
+  --mat-button-outlined-label-text-size: 13px;
+  --mat-button-outlined-container-shape: 8px;
+  --mat-button-outlined-outline-color: #cfd6e0;
+  --mat-button-outlined-icon-offset: 0;
+  --mat-button-outlined-icon-spacing: 4px;
+  vertical-align: middle;
+}
+.run-button mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.run-button:not(:disabled):hover { background: #eef2f7; }
 .actions-cell mat-spinner { display: inline-block; vertical-align: middle; margin-inline: 24px; }
 .inactive-row { background: var(--app-surface-alt); }
 .inactive-row .control-name { color: var(--app-muted); }

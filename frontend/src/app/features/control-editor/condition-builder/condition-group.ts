@@ -44,8 +44,17 @@ import { ConditionRule } from './condition-rule';
       <div class="children">
         @for (child of group().children; track child.id; let i = $index, first = $first) {
           @if (!first) {
-            <div class="connector" aria-hidden="true">
-              <span>{{ logicLabel() }}</span>
+            <div class="connector">
+              <button
+                type="button"
+                class="connector-toggle"
+                (click)="toggleLogic()"
+                [matTooltip]="toggleTooltip()"
+                [attr.aria-label]="logicLabel() + ' — ' + toggleTooltip()"
+              >
+                {{ logicLabel() }}
+                <mat-icon aria-hidden="true">swap_horiz</mat-icon>
+              </button>
             </div>
           }
           @if (child.type === 'rule') {
@@ -91,11 +100,15 @@ import { ConditionRule } from './condition-rule';
     .spacer { flex: 1; }
     .children { display: flex; flex-direction: column; }
     .connector { display: flex; align-items: center; padding: 4px 16px; }
-    .connector span {
-      font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 10px;
+    .connector-toggle {
+      display: inline-flex; align-items: center; gap: 2px;
+      font: inherit; font-size: 12px; font-weight: 600; padding: 2px 8px 2px 10px; border-radius: 10px;
+      border: 1px solid transparent; cursor: pointer;
       background: var(--app-and-bg); color: var(--app-and-text);
     }
-    .group.or > .children > .connector span { background: var(--app-or-bg); color: var(--app-or-text); }
+    .connector-toggle mat-icon { font-size: 14px; width: 14px; height: 14px; opacity: 0.7; }
+    .connector-toggle:hover { border-color: currentColor; }
+    .group.or > .children > .connector .connector-toggle { background: var(--app-or-bg); color: var(--app-or-text); }
     .group-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .empty { margin: 8px 4px; }
   `,
@@ -119,6 +132,17 @@ export class ConditionGroup {
 
   protected childPath(index: number): string {
     return childPath(this.path(), index);
+  }
+
+  protected readonly toggleTooltip = computed(() =>
+    this.group().logic === 'AND'
+      ? 'לחיצה תחליף ל"או" — מספיק שאחד מהתנאים בקבוצה יתקיים'
+      : 'לחיצה תחליף ל"וגם" — כל התנאים בקבוצה חייבים להתקיים',
+  );
+
+  /** The connector between conditions switches the logic of the whole group. */
+  protected toggleLogic(): void {
+    this.setLogic(this.group().logic === 'AND' ? 'OR' : 'AND');
   }
 
   protected setLogic(logic: Logic): void {

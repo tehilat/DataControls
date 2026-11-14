@@ -3,6 +3,8 @@ import { inject, Service } from '@angular/core';
 import { Observable, shareReplay } from 'rxjs';
 import { ControlDefinition } from '../definition/definition.model';
 import {
+  AiPromptPreviewDto,
+  AiSuggestionDto,
   ControlDto,
   ControlListQuery,
   ControlSummaryDto,
@@ -99,6 +101,20 @@ export class ControlsApi {
 
   run(id: number): Observable<RunDto> {
     return this.http.post<RunDto>(`${API}/controls/${id}/runs`, null);
+  }
+}
+
+/** Stage B: free text → proposed control. The AI service is optional; when it is down these calls fail with 503. */
+@Service()
+export class AiApi {
+  private readonly http = inject(HttpClient);
+
+  suggestControl(text: string): Observable<AiSuggestionDto> {
+    return this.http.post<AiSuggestionDto>(`${API}/ai/suggest-control`, { text });
+  }
+
+  promptPreview(text: string): Observable<AiPromptPreviewDto> {
+    return this.http.get<AiPromptPreviewDto>(`${API}/ai/prompt-preview`, { params: toParams({ text }) });
   }
 }
 

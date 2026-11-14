@@ -30,16 +30,14 @@ export interface ResultsSort {
       >
         <caption class="cdk-visually-hidden">{{ caption() }}</caption>
 
-        <ng-container matColumnDef="__row">
-          <th mat-header-cell *matHeaderCellDef scope="col">#</th>
-          <td mat-cell *matCellDef="let row" class="muted">{{ row.rowNumber }}</td>
+        <ng-container matColumnDef="__id">
+          <th mat-header-cell *matHeaderCellDef scope="col">מזהה</th>
+          <td mat-cell *matCellDef="let row" class="record-cell"><bdi>{{ row.recordId ?? '—' }}</bdi></td>
         </ng-container>
 
         <ng-container matColumnDef="__record">
           <th mat-header-cell *matHeaderCellDef scope="col">רשומה</th>
-          <td mat-cell *matCellDef="let row" class="record-cell">
-            <bdi>{{ row.displayValue ?? row.recordId ?? '—' }}</bdi>
-          </td>
+          <td mat-cell *matCellDef="let row" class="record-cell"><bdi>{{ row.displayValue ?? '—' }}</bdi></td>
         </ng-container>
 
         <ng-container matColumnDef="__reason">
@@ -84,7 +82,17 @@ export class ResultsTable {
   readonly emptyText = input('לא נמצאו רשומות חריגות');
   readonly sortChange = output<ResultsSort>();
 
-  protected readonly displayedColumns = computed(() => ['__row', '__record', '__reason', ...this.columns().map((c) => c.key)]);
+  /** The record's display name gets its own column only when it adds something beyond the id. */
+  private readonly hasDisplayName = computed(() =>
+    this.rows().some((r) => !!r.displayValue && r.displayValue !== r.recordId),
+  );
+
+  protected readonly displayedColumns = computed(() => [
+    '__id',
+    ...(this.hasDisplayName() ? ['__record'] : []),
+    '__reason',
+    ...this.columns().map((c) => c.key),
+  ]);
 
   protected format(row: ViolationDto, column: ColumnDto): string {
     return formatValue(row.values[column.key], column.dataType, column.unit, this.options().get(column.key));
