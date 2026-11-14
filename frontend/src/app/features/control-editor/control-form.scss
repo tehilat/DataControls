@@ -27,7 +27,10 @@
 
 .side-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 
-.preview-card { margin-top: 16px; }
+// scroll-margin: the sticky toolbar must not cover the card after scrolling to it
+.preview-card { margin-top: 16px; scroll-margin-top: 80px; }
+// results of an older definition stay visible, but faded
+.preview-results.stale { opacity: 0.5; transition: opacity 0.2s; }
 .preview-stats { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 8px 0 12px; }
 .empty-state { display: flex; align-items: center; gap: 6px; }
 
