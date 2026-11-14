@@ -52,10 +52,14 @@ Get-ChildItem .\database\0[1-5]*.sql | Sort-Object Name | ForEach-Object {
     sqlcmd -S localhost\SQLEXPRESS -E -C -b -f 65001 -i $_.FullName
 }
 
-# אימות: 14 שאילתות שנכתבו ידנית מול התוצאות הצפויות. צפוי Passed = 1 בכל 14 השורות
-sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i .\database\99_verify.sql
+# אימות: 14 שאילתות שנכתבו ידנית מול התוצאות הצפויות, ובדיקות הרשאה
+sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -W -s "|" -i .\database\99_verify.sql
 ```
 
+- **תוצאה צפויה:** 14 שורות (אחת לכל בקרה) עם `Passed` = 1, שורת סיכום `14|14` (`PassedControls|TotalControls`),
+  ו-3 בדיקות הרשאה של `controls_runner` עם `Passed` = 1: SELECT על `ops` מותר, ו-UPDATE על `ops` ו-SELECT על `ctl` נחסמים.
+  הודעות "permission was denied" בבדיקות האלה הן התוצאה הנכונה.
+- `-W -s "|"` מצמצם את רוחב העמודות. בלעדיהם הפלט תקין, אבל רחב מאוד וקשה לקריאה.
 - `-f 65001` קורא את הסקריפטים כ-UTF-8, כדי שהעברית תישמר נכון.
 - התאריכים בנתונים יחסיים ליום ההרצה, כך שבקרות כמו "פג תוקף" ו"באיחור" עובדות בכל יום.
 - **אופציונלי, הדגמת גנריות:** `06_demo_add_weather_alerts.sql` מוסיף ישות חדשה ("התראת מזג אוויר") דרך Metadata בלבד.
@@ -94,7 +98,10 @@ pip install -r requirements-dev.txt       # פעם ראשונה בלבד
 uvicorn main:app --reload --port 8001
 ```
 
-- Swagger: http://localhost:8001/docs. בדיקת חיים: http://localhost:8001/health.
+- Swagger: http://localhost:8001/docs. בדיקת חיים: http://localhost:8001/health (צפוי `{"status":"ok","provider":"mock"}`).
+- אם `.venv\Scripts\activate` נחסם בשגיאה "running scripts is disabled on this system" (ברירת המחדל של Windows PowerShell),
+  אפשר לאשר סקריפטים מקומיים למשתמש הנוכחי: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`,
+  או לדלג על ההפעלה ולהריץ ישירות דרך ה-venv: `.venv\Scripts\python -m uvicorn main:app --reload --port 8001`.
 - ספק ה-AI נבחר במשתנה הסביבה `AI_PROVIDER` (ברירת מחדל `mock`).
 - אם `pip` נכשל בשגיאת תעודה (רשת עם סינון TLS), מגדירים את קובץ ה-CA של הארגון:
   `pip config set global.cert <path-to-ca.crt>`. אין לבטל אימות TLS.
@@ -108,7 +115,16 @@ npm start
 ```
 
 - כתובת: http://localhost:4200. הקריאות ל-`/api` מועברות ל-API (http://localhost:5149) דרך `frontend/proxy.conf.json`,
-  כך שאין תלות ב-CORS. בנייה: `npx ng build`, בדיקות יחידה: `npx ng test --watch=false`.
+  כך שאין תלות ב-CORS. ה-API צריך לרוץ (שלב 2) כדי שהמסכים יציגו נתונים.
+- אם `npm install` נכשל בשגיאת תעודה (רשת עם סינון TLS): `npm config set cafile <path-to-ca.crt>`. אין לבטל אימות TLS.
+
+### בדיקת תקינות אחרי ההפעלה
+
+```powershell
+Invoke-RestMethod http://localhost:8001/health                # שירות ה-AI: status = ok
+Invoke-RestMethod http://localhost:5149/api/metadata/entities # ה-API: 5 ישויות (6 אחרי סקריפט 06)
+Invoke-RestMethod http://localhost:4200/api/metadata/entities # אותו דבר, דרך ה-proxy של ה-Frontend
+```
 
 ### סדר מומלץ לדמו
 
@@ -121,17 +137,26 @@ npm start
 
 ## בדיקות
 
+מתוך תיקיית השורש. כל בלוק עובר לתיקייה שלו וחוזר לשורש בסוף, כך שאפשר להריץ אותם ברצף.
+
 ```powershell
-# Backend: unit + API + integration
+# Backend: unit + API + integration (אפשר גם כשה-API רץ)
 cd backend
 dotnet test
-
 # בלי בסיס נתונים (בדיקות האינטגרציה ידלגו גם אוטומטית אם ה-DB לא זמין)
 dotnet test --filter "Category!=Integration"
+cd ..
 
-# שירות ה-AI
+# שירות ה-AI (אחרי יצירת ה-venv בשלב 3)
 cd ai-service
 .venv\Scripts\python -m pytest
+cd ..
+
+# Frontend: בנייה (צפויה בלי שגיאות ובלי אזהרות) ובדיקות יחידה (Vitest), אחרי npm install בשלב 4
+cd frontend
+npx ng build
+npx ng test --watch=false
+cd ..
 ```
 
 - **Backend (xUnit):** Serializer, Binder, QueryBuilder (כל אופרטור, joins, קינון, ניסיונות injection), סיבות חריגה,
@@ -139,6 +164,8 @@ cd ai-service
   התוצאות הצפויות של בדיקות האינטגרציה נקראות ישירות מ-`database/99_verify.sql`, ולכן הוא מקור האמת היחיד.
 - **AI service (pytest):** ולידציה מול הקטלוג, זיהוי בקשות ב-Mock, PromptBuilder, ה-API.
   כולל בדיקה שכל 14 ההגדרות מ-`04_sample_controls.sql` תקינות.
+- **Frontend (Vitest):** עץ ההגדרה והמרות, נתיבי שגיאות, התקציר בעברית, פענוח ProblemDetails, מסך ה-AI (הצעה, פתיחה בעורך
+  בלי שמירה, שירות לא זמין) ותצוגה מקדימה בעורך.
 - connection string אחר לבדיקות האינטגרציה: משתנה הסביבה `DATACONTROLS_TEST_DB`.
 
 ## מבנה התיקיות

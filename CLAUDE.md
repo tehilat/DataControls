@@ -75,7 +75,8 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
 ## How to run (update as the project evolves)
 - DB: run scripts in /database in order against `localhost\SQLEXPRESS` (always `-C` for the self-signed cert):
   `Get-ChildItem .\database\0[1-5]*.sql | Sort-Object Name | ForEach-Object { sqlcmd -S localhost\SQLEXPRESS -E -C -b -f 65001 -i $_.FullName }`
-  then `sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i .\database\99_verify.sql` (expect 14/14 Passed).
+  then `sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -W -s "|" -i .\database\99_verify.sql`
+  (expect 14/14 Passed + 3 permission checks Passed; `-W -s "|"` keeps the very wide output readable).
   `06_demo_add_weather_alerts.sql` is optional (genericity demo) and re-runnable.
   Seed dates are relative: valid future dates ≥ +365 days, invalid past dates ≥ 30 days back.
 - API: `cd backend && dotnet run --project DataControls.Api` → http://localhost:5149, Swagger UI at `/swagger`,
