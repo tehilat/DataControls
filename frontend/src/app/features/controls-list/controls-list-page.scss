@@ -19,7 +19,7 @@
   --mat-button-outlined-icon-spacing: 4px;
   vertical-align: middle;
 }
-.run-button mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.run-icon { width: 11px; height: 11px; fill: currentColor; vertical-align: -1px; margin-inline-end: 6px; }
 .run-button:not(:disabled):hover { background: #eef2f7; }
 .actions-cell mat-spinner { display: inline-block; vertical-align: middle; margin-inline: 24px; }
 .inactive-row { background: var(--app-surface-alt); }
