@@ -20,7 +20,7 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
 ## Repository layout
 ```
 /database            SQL scripts 01_schema … 06_demo, 99_verify.sql (see docs/db-instructions.md)
-/backend             DataControls.sln
+/backend             DataControls.slnx
   DataControls.Domain          entities: Control, ConditionGroup, Condition, Operator enums, metadata models
   DataControls.Application     services, interfaces (IControlRepository, IQueryBuilder, IControlRunner, IAiControlGenerator)
   DataControls.Infrastructure  SQL Server access (Dapper), SqlQueryBuilder, AI service HTTP client
@@ -28,7 +28,9 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
   DataControls.Tests           xUnit — mainly QueryBuilder and validation tests
 /ai-service          Python FastAPI: /generate-control, providers/ (MockProvider + IProvider interface), schemas.py
 /frontend            Angular app
-/docs                architecture.md, assumptions-and-limits.md, ai-tools-used.md
+/docs                architecture.md, assumptions-limitations.md, ai-tools.md, control-examples.md, stage-b-ai.md,
+                     submission.md (+ .html), db-instructions.md, requirements.md (+ .docx)
+/tools               md_to_html.py (submission.md → submission.html)
 ```
 
 ## Core design rules
@@ -68,9 +70,8 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
 - Windows, PowerShell. .NET SDK 10.0.404, Angular CLI 22, Node 24, Python 3.13.
 - SQL Server Express instance: `localhost\SQLEXPRESS` (Windows authentication).
   Connection string: `Server=localhost\SQLEXPRESS;Database=DroneOpsControls;Trusted_Connection=True;TrustServerCertificate=True;`
-- Network goes through a TLS-inspecting filter (Rimon/Netspark). npm and pip are already configured
-  with `C:\certs\rimon-ca.crt`. If a tool fails with a certificate error, configure it to use that CA file;
-  never disable TLS verification.
+- Network goes through a TLS-inspecting filter. npm and pip are already configured with the organization's CA file.
+  If a tool fails with a certificate error, configure it to use that CA file; never disable TLS verification.
 
 ## How to run (update as the project evolves)
 - DB: run scripts in /database in order against `localhost\SQLEXPRESS` (always `-C` for the self-signed cert):

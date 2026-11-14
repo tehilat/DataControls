@@ -1,0 +1,7 @@
+# Files for the development environment only (AI assistant instructions, editor settings).
+# They stay in the repository but are left out of exported archives (git archive -o DataControls.zip HEAD).
+CLAUDE.md export-ignore
+frontend/CLAUDE.md export-ignore
+frontend/.mcp.json export-ignore
+frontend/.vscode export-ignore
+frontend/.vscode/** export-ignore

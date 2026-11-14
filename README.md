@@ -22,6 +22,7 @@
 | [docs/assumptions-limitations.md](docs/assumptions-limitations.md) | הנחות עבודה, מגבלות והרחבות אפשריות |
 | [docs/ai-tools.md](docs/ai-tools.md) | כלי ה-AI ששימשו בפיתוח |
 | [docs/db-instructions.md](docs/db-instructions.md) | מפרט בסיס הנתונים ומבנה ה-JSON של בקרה |
+| [docs/requirements.md](docs/requirements.md) | דרישות המטלה (המקור: [docs/requirements.docx](docs/requirements.docx)) |
 | [ai-service/README.md](ai-service/README.md) | שירות ה-AI: endpoints, חוזה הקטלוג, Mock, החלפת מודל |
 
 ## דרישות מוקדמות
@@ -30,7 +31,6 @@
 |---|---|---|
 | .NET SDK | 10.0 | `dotnet --version` |
 | Node.js | 24 | `node --version` |
-| Angular CLI | 22 | `ng version` (התקנה: `npm install -g @angular/cli`) |
 | Python | 3.13 | `python --version` |
 | SQL Server Express | עם אימות Windows, מופע `localhost\SQLEXPRESS` | `sqlcmd -S localhost\SQLEXPRESS -E -C -Q "SELECT @@VERSION"` |
 | sqlcmd | כלי שורת הפקודה של SQL Server | `sqlcmd -?` |
@@ -38,6 +38,9 @@
 > **הערה על תעודות:** SQL Server Express מקומי משתמש בתעודה self-signed.
 > לכן בכל פקודת `sqlcmd` מוסיפים `-C` (trust server certificate), ומחרוזת החיבור של ה-API כוללת
 > `TrustServerCertificate=True`. זה מתאים לסביבת פיתוח מקומית בלבד. בסביבת ייצור יש להתקין תעודה חתומה ולהסיר את שתי ההגדרות.
+
+אין צורך בהתקנה גלובלית של Angular CLI: הוא מותקן עם `npm install` בתיקיית `frontend`, וכל הפקודות משתמשות בו דרך
+`npm start` או `npx ng`.
 
 ## התקנה והרצה
 
@@ -47,6 +50,10 @@
 
 יוצר את `DroneOpsControls` (סכמות `ops`, `meta`, `ctl`), נתוני דוגמה, Metadata, 14 בקרות לדוגמה ומשתמשי הרשאות.
 הסקריפטים מוחקים ויוצרים מחדש, כך שאפשר להריץ אותם שוב.
+
+> **אזהרה:** `01_schema.sql` מנתק את כל החיבורים הפעילים ל-`DroneOpsControls`
+> (`SET SINGLE_USER WITH ROLLBACK IMMEDIATE`) ומוחק את בסיס הנתונים. בקרות שנוצרו, הרצות ותוצאות קודמות נמחקות,
+> ונשארות רק 14 בקרות הדוגמה. אם ה-API רץ, החיבורים שלו מתנתקים, ועדיף לעצור אותו לפני ההרצה ולהפעיל אותו מחדש אחריה.
 
 ```powershell
 Get-ChildItem .\database\0[1-5]*.sql | Sort-Object Name | ForEach-Object {
@@ -118,14 +125,31 @@ npm start
 - כתובת: http://localhost:4200. הקריאות ל-`/api` מועברות ל-API (http://localhost:5149) דרך `frontend/proxy.conf.json`,
   כך שאין תלות ב-CORS. ה-API צריך לרוץ (שלב 2) כדי שהמסכים יציגו נתונים.
 - אם `npm install` נכשל בשגיאת תעודה (רשת עם סינון TLS): `npm config set cafile <path-to-ca.crt>`. אין לבטל אימות TLS.
+- ב-npm 11 מופיעה בסוף `npm install` אזהרה `install-scripts ... not yet covered by allowScripts` (למשל עבור esbuild ו-lmdb).
+  היא צפויה ולא מזיקה: החבילות האלה מגיעות עם קבצים בינאריים מוכנים, וה-build והבדיקות עובדים בלי להריץ את הסקריפטים.
 
 ### בדיקת תקינות אחרי ההפעלה
+
+הכתובות לפי הפורטים שבברירת המחדל. אם שיניתם פורט, ראו [פורטים](#פורטים).
 
 ```powershell
 Invoke-RestMethod http://localhost:8001/health                # שירות ה-AI: status = ok
 Invoke-RestMethod http://localhost:5149/api/metadata/entities # ה-API: 5 ישויות (6 אחרי סקריפט 06)
 Invoke-RestMethod http://localhost:4200/api/metadata/entities # אותו דבר, דרך ה-proxy של ה-Frontend
 ```
+
+### פורטים
+
+| שירות | פורט | איפה משנים | מה לעדכן בנוסף |
+|---|---|---|---|
+| Backend (API) | 5149 | `backend/DataControls.Api/Properties/launchSettings.json` (`applicationUrl`; בפרופיל `https` גם 7217) | `target` ב-`frontend/proxy.conf.json` |
+| Frontend | 4200 | `npm start -- --port <port>` (או `port` תחת `serve.options` ב-`frontend/angular.json`) | `Cors:AllowedOrigins` ב-`backend/DataControls.Api/appsettings.json` |
+| שירות ה-AI | 8001 | `--port` בפקודת `uvicorn` | `AiService:BaseUrl` ב-`backend/DataControls.Api/appsettings.json` |
+
+- ה-Frontend פונה ל-API רק דרך ה-proxy, ולכן `Cors:AllowedOrigins` נדרש רק למי שקורא ל-API ישירות מהדפדפן בכתובת אחרת.
+  כדאי לעדכן אותו בכל מקרה כשמשנים את פורט ה-Frontend.
+- אחרי שינוי ב-`appsettings.json` או ב-`launchSettings.json` צריך להפעיל מחדש את ה-API. אחרי שינוי ב-`proxy.conf.json`
+  צריך להפעיל מחדש את `npm start`.
 
 ### סדר מומלץ לדמו
 
@@ -174,7 +198,7 @@ cd ..
 ```
 /database                  סקריפטי SQL: 01_schema, 02_seed_data, 03_metadata, 04_sample_controls,
                            05_security, 06_demo_add_weather_alerts (אופציונלי), 99_verify
-/backend                   DataControls.sln (.NET 10)
+/backend                   DataControls.slnx (.NET 10, פורמט ה-solution החדש)
   DataControls.Domain          מודל ההגדרה (group / rule / operand) + Serializer, מודל ה-Metadata
   DataControls.Application     DefinitionBinder, שירותים (בקרות, הרצות, קטלוג עסקי, הצעות AI), ממשקים
   DataControls.Infrastructure  גישה ל-SQL Server (Dapper), SqlQueryBuilder, SqlControlRunner, לקוח HTTP לשירות ה-AI

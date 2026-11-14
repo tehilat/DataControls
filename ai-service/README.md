@@ -28,8 +28,14 @@ Settings (environment variables): `AI_PROVIDER` (default `mock`).
 | POST | `/generate-control` | `{text, catalog}` → `{definition, explanation, confidence, warnings}` |
 | POST | `/prompt-preview` | `{text, catalog}` → `{provider, system, user, responseSchema}`: the full prompt a real model would receive |
 
-Request example: `samples/generate-request.json`
-(`curl -X POST localhost:8001/generate-control -H "Content-Type: application/json" --data-binary @samples/generate-request.json`).
+Request example: `samples/generate-request.json`, from the `ai-service` folder:
+
+```powershell
+curl.exe -X POST http://localhost:8001/generate-control -H "Content-Type: application/json" --data-binary "@samples/generate-request.json"
+```
+
+In Windows PowerShell, `curl` is an alias of `Invoke-WebRequest` and does not accept these options, so use `curl.exe`
+(the real curl, included in Windows 10+). The quotes around `@samples/...` stop PowerShell from treating `@` as splatting.
 
 Errors: 422 for an invalid request, 502 when the provider fails. Both return `application/problem+json`.
 A request that is not recognized is **not** an error. It returns 200 with `definition: null`, `confidence: 0` and a Hebrew explanation in `warnings`.
