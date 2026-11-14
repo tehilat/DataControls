@@ -24,6 +24,7 @@
 | [docs/db-instructions.md](docs/db-instructions.md) | מפרט בסיס הנתונים ומבנה ה-JSON של בקרה |
 | [docs/requirements.md](docs/requirements.md) | דרישות המטלה (המקור: [docs/requirements.docx](docs/requirements.docx)) |
 | [ai-service/README.md](ai-service/README.md) | שירות ה-AI: endpoints, חוזה הקטלוג, Mock, החלפת מודל |
+| [frontend/README.md](frontend/README.md) | ה-Frontend: הרצה, בנייה ומבנה הקוד (core / shared / features) |
 
 ## דרישות מוקדמות
 
@@ -125,8 +126,9 @@ npm start
 - כתובת: http://localhost:4200. הקריאות ל-`/api` מועברות ל-API (http://localhost:5149) דרך `frontend/proxy.conf.json`,
   כך שאין תלות ב-CORS. ה-API צריך לרוץ (שלב 2) כדי שהמסכים יציגו נתונים.
 - אם `npm install` נכשל בשגיאת תעודה (רשת עם סינון TLS): `npm config set cafile <path-to-ca.crt>`. אין לבטל אימות TLS.
-- ב-npm 11 מופיעה בסוף `npm install` אזהרה `install-scripts ... not yet covered by allowScripts` (למשל עבור esbuild ו-lmdb).
-  היא צפויה ולא מזיקה: החבילות האלה מגיעות עם קבצים בינאריים מוכנים, וה-build והבדיקות עובדים בלי להריץ את הסקריפטים.
+- ב-npm 11 מופיעה בסוף `npm install` האזהרה `4 packages have install scripts not yet covered by allowScripts`, עבור
+  `esbuild`, `lmdb`, `@parcel/watcher` ו-`msgpackr-extract`. היא צפויה ולא מזיקה: החבילות האלה מגיעות עם קבצים בינאריים
+  מוכנים לפלטפורמה, וה-build, שרת הפיתוח והבדיקות עובדים בלי להריץ את הסקריפטים. אין צורך לאשר אותם.
 
 ### בדיקת תקינות אחרי ההפעלה
 
@@ -143,9 +145,17 @@ Invoke-RestMethod http://localhost:4200/api/metadata/entities # אותו דבר,
 | שירות | פורט | איפה משנים | מה לעדכן בנוסף |
 |---|---|---|---|
 | Backend (API) | 5149 | `backend/DataControls.Api/Properties/launchSettings.json` (`applicationUrl`; בפרופיל `https` גם 7217) | `target` ב-`frontend/proxy.conf.json` |
-| Frontend | 4200 | `npm start -- --port <port>` (או `port` תחת `serve.options` ב-`frontend/angular.json`) | `Cors:AllowedOrigins` ב-`backend/DataControls.Api/appsettings.json` |
+| Frontend | 4200 | חד-פעמי: `npm start -- --port <port>` (מעביר `--port` ל-`ng serve`). קבוע: ראו מתחת לטבלה | `Cors:AllowedOrigins` ב-`backend/DataControls.Api/appsettings.json` |
 | שירות ה-AI | 8001 | `--port` בפקודת `uvicorn` | `AiService:BaseUrl` ב-`backend/DataControls.Api/appsettings.json` |
 
+- **פורט קבוע ל-Frontend:** ב-`frontend/angular.json` אין כרגע מפתח `port`. מוסיפים אותו לאובייקט
+  `projects.frontend.architect.serve.options`, ליד `proxyConfig` שכבר נמצא שם:
+  ```json
+  "options": {
+    "proxyConfig": "proxy.conf.json",
+    "port": 4300
+  }
+  ```
 - ה-Frontend פונה ל-API רק דרך ה-proxy, ולכן `Cors:AllowedOrigins` נדרש רק למי שקורא ל-API ישירות מהדפדפן בכתובת אחרת.
   כדאי לעדכן אותו בכל מקרה כשמשנים את פורט ה-Frontend.
 - אחרי שינוי ב-`appsettings.json` או ב-`launchSettings.json` צריך להפעיל מחדש את ה-API. אחרי שינוי ב-`proxy.conf.json`
@@ -159,6 +169,23 @@ Invoke-RestMethod http://localhost:4200/api/metadata/entities # אותו דבר,
 4. הגדרת בקרה חדשה דרך המסך (ראו [docs/control-examples.md](docs/control-examples.md)).
 5. שלב ב': תיאור בקרה בשפה חופשית, בדיקת ההצעה ואישורה (ראו [docs/stage-b-ai.md](docs/stage-b-ai.md)).
 6. גנריות: הרצת `06` ורענון הקטלוג. הישות החדשה מופיעה ואפשר להגדיר עליה בקרה.
+
+### בקשות לדוגמה לשלב ב' (`docs/requests/`)
+
+כל קובץ הוא גוף בקשה מוכן ל-`POST /api/ai/suggest-control`, בפורמט `{"text": "..."}`, שמור כ-UTF-8.
+1–5 הן הבקשות שה-Mock מזהה, ו-`6-unrecognized.json` מדגים בקשה שלא זוהתה (`definition: null` עם הסבר).
+שליחה מ-PowerShell, מתוך תיקיית השורש, כשה-API ושירות ה-AI רצים:
+
+```powershell
+$body = [IO.File]::ReadAllBytes("docs\requests\2-active-drone-closed-hub.json")   # הבתים כפי שהם, בלי המרת קידוד
+$r = Invoke-RestMethod -Method Post http://localhost:5149/api/ai/suggest-control `
+       -ContentType "application/json; charset=utf-8" -Body $body
+$r.rootEntity, $r.isValid, $r.confidence       # Drone, True, 0.9
+$r.definition | ConvertTo-Json -Depth 10       # ההגדרה המוצעת
+```
+
+את אותם קבצים אפשר להעלות גם ב-Swagger (`/swagger`), או להדביק את הטקסט שבהם במסך "צור בעזרת AI".
+אם העברית מוצגת בקונסול כסימנים משובשים, זו רק בעיית תצוגה של החלון: `[Console]::OutputEncoding = [Text.Encoding]::UTF8`.
 
 ## בדיקות
 
@@ -193,6 +220,45 @@ cd ..
   בלי שמירה, שירות לא זמין) ותצוגה מקדימה בעורך.
 - connection string אחר לבדיקות האינטגרציה: משתנה הסביבה `DATACONTROLS_TEST_DB`.
 
+## פתרון בעיות
+
+### פורט תפוס
+
+הודעה כמו `address already in use`, `Failed to bind to address` (API), `[Errno 10048]` (uvicorn), או `Port 4200 is already in use`
+(Angular) פירושה שתהליך אחר כבר מאזין לפורט. בדרך כלל זה מופע קודם של אותו שירות שלא נסגר.
+
+1. **מי מאזין לפורט** (5149, 4200 או 8001):
+   ```powershell
+   netstat -ano | findstr ":8001"            # העמודה האחרונה בשורת LISTENING היא מזהה התהליך (PID)
+   Get-NetTCPConnection -LocalPort 8001 -State Listen | Select-Object OwningProcess   # חלופה
+   Get-Process -Id <PID>                     # מה התהליך
+   ```
+2. **אם זה מופע ישן של השירות:** סוגרים את החלון שלו, או עוצרים אותו יחד עם כל תהליכי המשנה שלו:
+   ```powershell
+   taskkill /PID <PID> /T /F
+   ```
+3. **או שמריצים על פורט אחר**, לפי [טבלת הפורטים](#פורטים), כולל עדכון הקבצים שתלויים בו.
+
+### תהליך uvicorn יתום על 8001
+
+עם `--reload`, uvicorn מריץ שלושה תהליכי Python: תהליך ראשי, תהליך שמאזין לפורט, ו-worker שמתחיל ב-`spawn_main`.
+אם החלון נסגר בצורה לא מסודרת, אחד מהם יכול להישאר ולהחזיק את 8001. כדי למצוא את כל התהליכים של השירות:
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+  Where-Object { $_.CommandLine -match 'uvicorn|multiprocessing\.spawn' } |
+  Select-Object ProcessId, ParentProcessId, CommandLine
+```
+
+בודקים ב-`CommandLine` שהתהליכים שייכים ל-`ai-service` (הנתיב של ה-venv מופיע בו; ה-worker מופיע עם `spawn_main`
+והמזהה של תהליך האב שלו), ואז עוצרים אותם:
+
+```powershell
+Stop-Process -Id <PID1>,<PID2>,<PID3> -Force
+```
+
+ומוודאים שהפורט התפנה: `netstat -ano | findstr ":8001"` לא מחזיר שורת `LISTENING`.
+
 ## מבנה התיקיות
 
 ```
@@ -206,6 +272,7 @@ cd ..
   DataControls.Tests           Unit / Api / Integration
 /ai-service                Python FastAPI: /generate-control, /prompt-preview, providers/ (AiProvider + MockProvider)
 /frontend                  Angular (standalone components, עברית, RTL)
-/docs                      ארכיטקטורה, דוגמאות בקרות, שלב ב', הנחות ומגבלות, כלי AI, מפרט ה-DB
-  requests/                בקשות לדוגמה לשלב ב' (UTF-8)
+/docs                      מסמך ההגשה, ארכיטקטורה, דוגמאות בקרות, שלב ב', הנחות ומגבלות, כלי AI, מפרט ה-DB, דרישות המטלה
+  requests/                בקשות לדוגמה לשלב ב' (UTF-8), ראו "בקשות לדוגמה לשלב ב'"
+/tools                     md_to_html.py: ממיר את docs/submission.md ל-docs/submission.html (ספרייה סטנדרטית בלבד)
 ```
