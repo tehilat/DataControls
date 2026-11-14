@@ -23,6 +23,8 @@ import { ProblemAlert } from '../../shared/problem-alert';
   providers: [HEBREW_PAGINATOR],
   template: `
     <div class="toolbar">
+      <!-- extra filters from the host page (e.g. the control picker) sit in the same row -->
+      <ng-content select="[historyFilters]" />
       <mat-form-field subscriptSizing="dynamic">
         <mat-label>סטטוס</mat-label>
         <mat-select [value]="status()" (selectionChange)="setStatus($event.value)">
@@ -105,6 +107,7 @@ import { ProblemAlert } from '../../shared/problem-alert';
   styles: `
     .violations { font-weight: 600; }
     .current { font-weight: 700; }
+    a { white-space: nowrap; }
     .empty-cell { padding: 24px; text-align: center; color: var(--app-muted); }
     @media (max-width: 700px) { .hide-sm { display: none; } }
   `,

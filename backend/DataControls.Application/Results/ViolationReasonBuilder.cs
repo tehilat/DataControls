@@ -14,6 +14,8 @@ namespace DataControls.Application.Results;
 public sealed class ViolationReasonBuilder
 {
     public const string FallbackReason = "הרשומה עומדת בתנאי הבקרה.";
+    public const string MissingValueText = "חסר ערך";
+    public const string PresentValueText = "קיים ערך";
 
     public string Build(BoundDefinition definition, MetadataCatalog catalog, IReadOnlyDictionary<string, object?> row)
     {
@@ -60,12 +62,13 @@ public sealed class ViolationReasonBuilder
         var actual = ValueFormatter.Format(Get(row, ResultAliases.RuleLeft(rule.Index)), rule.Field.Field, catalog);
         var op = rule.OperatorDisplayName;
 
+        // "טלפון: חסר ערך" reads better than "טלפון ריק" for every field type (dates, numbers, text)
         switch (rule.Operator)
         {
             case ComparisonOperator.IsEmpty:
-                return $"{name} {op}";
+                return $"{name}: {MissingValueText}";
             case ComparisonOperator.IsNotEmpty:
-                return $"{name} {op} ({actual})";
+                return $"{name}: {PresentValueText}";
         }
 
         var expected = rule.CompareTo switch

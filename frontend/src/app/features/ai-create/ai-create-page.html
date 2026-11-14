@@ -1,0 +1,163 @@
+<div class="page-header">
+  <a mat-icon-button routerLink="/controls" aria-label="חזרה לרשימת הבקרות"><mat-icon>arrow_forward</mat-icon></a>
+  <h1>יצירת בקרה בעזרת AI</h1>
+</div>
+
+<div class="ai-layout">
+  <mat-card appearance="outlined" class="section-card">
+    <mat-card-header>
+      <mat-card-title>מה הבקרה צריכה למצוא?</mat-card-title>
+      <mat-card-subtitle>תארו במילים את הבעיה בנתונים. ההצעה תוצג לבדיקה — שום דבר לא נשמר או מורץ בלי אישורכם.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-form-field class="full-width" subscriptSizing="dynamic">
+        <mat-label>תיאור הבקרה</mat-label>
+        <textarea
+          matInput
+          rows="3"
+          [value]="text()"
+          (input)="text.set($any($event.target).value)"
+          (keydown.control.enter)="suggest()"
+          [attr.maxlength]="maxText"
+          placeholder="למשל: רחפן פעיל במוקד סגור"
+        ></textarea>
+        <mat-hint align="end">{{ text().length }} / {{ maxText }}</mat-hint>
+        <mat-hint>Ctrl+Enter לשליחה</mat-hint>
+      </mat-form-field>
+
+      <div class="examples">
+        <span class="field-label" id="examples-label">בקשות לדוגמה (מזוהות במצב הדגמה):</span>
+        <div class="example-list" role="group" aria-labelledby="examples-label">
+          @for (example of examples; track example) {
+            <button type="button" class="example-chip" (click)="useExample(example)" [disabled]="loading()">
+              {{ example }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="actions">
+        <button mat-flat-button type="button" (click)="suggest()" [disabled]="!canSuggest()">
+          <mat-icon>auto_awesome</mat-icon>
+          הצע בקרה
+        </button>
+      </div>
+      @if (loading()) {
+        <mat-progress-bar mode="indeterminate" aria-label="ממתין להצעה" />
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (unavailable()) {
+    <div class="alert alert-warn unavailable" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <div class="alert-body">
+        <strong>שירות ה-AI אינו זמין כרגע</strong>
+        <span>{{ error()?.detail ?? 'לא ניתן להתחבר לשירות ההצעות.' }}</span>
+        <span>כל שאר המערכת ממשיכה לעבוד. אפשר <a routerLink="/controls/new">להגדיר את הבקרה ידנית</a>.</span>
+      </div>
+    </div>
+  } @else {
+    <app-problem-alert [error]="error()" />
+  }
+
+  @if (suggestion(); as s) {
+    <mat-card appearance="outlined" class="section-card result" aria-live="polite">
+      <mat-card-header>
+        <mat-card-title>
+          @if (s.definition) {
+            ההצעה
+          } @else {
+            לא נמצאה הצעה
+          }
+        </mat-card-title>
+        <mat-card-subtitle>עבור: "{{ suggestedText() }}"</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (s.definition) {
+          <div class="meta-row">
+            <span [class]="'chip confidence confidence-' + confidenceLevel()">
+              <mat-icon aria-hidden="true">speed</mat-icon>
+              {{ confidenceLabel() }} ({{ s.confidence | percent: '1.0-0' }})
+            </span>
+            @if (s.rootEntityDisplayName) {
+              <span class="chip">ישות: {{ s.rootEntityDisplayName }}</span>
+            }
+            <span class="chip" [class.status-succeeded]="s.isValid" [class.status-failed]="!s.isValid">
+              {{ s.isValid ? 'ההגדרה תקינה' : 'ההגדרה דורשת תיקון' }}
+            </span>
+          </div>
+        }
+
+        @if (s.summary) {
+          <h2 class="block-title">מה הבקרה תבדוק</h2>
+          <p class="summary">{{ s.summary }}</p>
+        }
+
+        <h2 class="block-title">הסבר</h2>
+        <p>{{ s.explanation }}</p>
+
+        @if (s.warnings.length) {
+          <div class="alert alert-warn">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <div class="alert-body">
+              <strong>הנחות ואזהרות</strong>
+              <ul>
+                @for (w of s.warnings; track $index) {
+                  <li>{{ w }}</li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+
+        @if (s.validationErrors.length) {
+          <div class="alert alert-error">
+            <mat-icon aria-hidden="true">error_outline</mat-icon>
+            <div class="alert-body">
+              <strong>שגיאות בהגדרה המוצעת</strong>
+              <ul>
+                @for (e of s.validationErrors; track $index) {
+                  <li><span class="error-location">{{ location(e.path) }}:</span> {{ e.message }}</li>
+                }
+              </ul>
+              <span>אפשר לפתוח אותה בעורך ולתקן.</span>
+            </div>
+          </div>
+        }
+
+        <div class="actions">
+          @if (s.definition) {
+            <button mat-flat-button type="button" (click)="openInEditor()">
+              <mat-icon>edit_note</mat-icon>
+              פתח בעורך
+            </button>
+            <span class="muted small">בעורך אפשר לשנות, להריץ תצוגה מקדימה ולשמור. שום דבר לא נשמר עד שתלחצו "שמירה".</span>
+          } @else {
+            <a mat-stroked-button routerLink="/controls/new"><mat-icon>add</mat-icon>הגדרה ידנית</a>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <mat-expansion-panel class="prompt-panel" (opened)="loadPrompt()" [disabled]="!text().trim() && !suggestedText()">
+    <mat-expansion-panel-header>
+      <mat-panel-title><mat-icon aria-hidden="true">visibility</mat-icon>&nbsp;מה נשלח ל-AI</mat-panel-title>
+      <mat-panel-description>ה-prompt המלא: קטלוג עסקי בלבד, בלי שמות טבלאות</mat-panel-description>
+    </mat-expansion-panel-header>
+    @if (promptLoading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="טוען את ה-prompt" />
+    }
+    <app-problem-alert [error]="promptError()" />
+    @if (prompt(); as p) {
+      <p class="muted small">ספק: <bdi>{{ p.provider }}</bdi> · עבור: "{{ promptFor() }}"</p>
+      <h3 class="block-title">הוראות מערכת (system)</h3>
+      <pre dir="ltr" tabindex="0">{{ p.system }}</pre>
+      <h3 class="block-title">הודעת המשתמש (user)</h3>
+      <pre dir="auto" tabindex="0">{{ p.user }}</pre>
+      <h3 class="block-title">מבנה התשובה הנדרש (JSON Schema)</h3>
+      <pre dir="ltr" tabindex="0">{{ p.responseSchema | json }}</pre>
+    }
+  </mat-expansion-panel>
+</div>

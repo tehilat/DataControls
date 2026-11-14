@@ -15,20 +15,20 @@ import { RunHistory } from './run-history';
     <div class="page-header">
       <h1>היסטוריית הרצות</h1>
     </div>
-    <div class="toolbar">
-      <mat-form-field subscriptSizing="dynamic" class="control-filter">
+    <app-run-history [controlId]="selectedId()">
+      <mat-form-field historyFilters subscriptSizing="dynamic" class="control-filter">
         <mat-label>בקרה</mat-label>
-        <mat-select [value]="selectedId()" (selectionChange)="selectControl($event.value)">
-          <mat-option [value]="null">כל הבקרות</mat-option>
+        <!-- 0 = all controls (a null value would show an empty select) -->
+        <mat-select [value]="selectedId() ?? 0" (selectionChange)="selectControl($event.value)">
+          <mat-option [value]="0">כל הבקרות</mat-option>
           @for (c of controls(); track c.id) {
             <mat-option [value]="c.id">{{ c.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
-    </div>
-    <app-run-history [controlId]="selectedId()" />
+    </app-run-history>
   `,
-  styles: `.control-filter { min-width: 280px; }`,
+  styles: `.control-filter { width: 320px; max-width: 100%; }`,
 })
 export class RunHistoryPage {
   private readonly router = inject(Router);
@@ -40,7 +40,7 @@ export class RunHistoryPage {
   protected readonly selectedId = computed(() => (this.controlId() ? Number(this.controlId()) : null));
   protected readonly controls = toSignal(this.controlsApi.list().pipe(catchError(() => of([]))), { initialValue: [] });
 
-  protected selectControl(id: number | null): void {
-    this.router.navigate([], { queryParams: { controlId: id ?? undefined } });
+  protected selectControl(id: number): void {
+    this.router.navigate([], { queryParams: { controlId: id || undefined } });
   }
 }

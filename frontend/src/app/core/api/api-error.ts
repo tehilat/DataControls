@@ -32,6 +32,7 @@ const FALLBACK_TITLES: Record<number, string> = {
   409: 'הפעולה מתנגשת במצב הנוכחי',
   422: 'הרצת הבקרה נכשלה',
   500: 'שגיאת שרת',
+  503: 'השירות אינו זמין כרגע',
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -75,7 +76,7 @@ export function toApiError(error: unknown): ApiError {
     }
   }
 
-  const fallbackTitle = FALLBACK_TITLES[error.status] ?? (error.status >= 500 ? FALLBACK_TITLES[500] : 'שגיאה');
+  const fallbackTitle = FALLBACK_TITLES[error.status] ?? (error.status >= 500 ? FALLBACK_TITLES[500]! : 'שגיאה');
   if (!isRecord(body)) return new ApiError(error.status, fallbackTitle, null);
 
   const runId = body['runId'];

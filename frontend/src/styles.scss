@@ -9,6 +9,19 @@ html {
     density: -1,
   ));
 
+  // main action buttons in the same dark blue as the toolbar (filled: "בקרה חדשה", "שמירה"; outlined: "הרצה")
+  @include mat.button-overrides((
+    filled-container-color: #12233d,
+    filled-label-text-color: #ffffff,
+    outlined-label-text-color: #12233d,
+    outlined-outline-color: #12233d,
+  ));
+
+  // softer grey lines between table rows (all tables)
+  @include mat.table-overrides((
+    row-item-outline-color: #e9ecf1,
+  ));
+
   // app tokens — contrast checked against their backgrounds (WCAG AA)
   --app-bg: #f4f6f9;
   --app-surface: #ffffff;
@@ -16,7 +29,7 @@ html {
   --app-border: #d9dee7;
   --app-text: #1b1f27;
   --app-muted: #5a6272;
-  --app-toolbar-bg: #0b4a8b;
+  --app-toolbar-bg: #12233d;
   --app-toolbar-text: #ffffff;
   --app-success: #1b7f3b;
   --app-success-text: #14632d;

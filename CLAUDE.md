@@ -114,15 +114,23 @@ ProblemDetails (`ApiExceptionHandler`, `ModelStateProblems`) with JSON paths. `G
 ## Frontend (implemented)
 See `docs/architecture.md` ("Frontend") and `frontend/README.md`. Angular 22 zoneless, standalone, signals, Angular Material (M3, Heebo),
 lazy routes: `/controls`, `/controls/new` (`?copyFrom=id` duplicate, `?draft=1` take a definition from `ControlDraftService`),
-`/controls/:id/edit`, `/controls/ai` (stage-B placeholder), `/runs` (`?controlId=`), `/runs/:runId`.
+`/controls/:id/edit`, `/controls/ai` (stage B), `/runs` (`?controlId=`), `/runs/:runId`.
+- `/controls/ai`: free text + the 5 example requests the Mock recognizes → `AiApi.suggestControl` (`POST /api/ai/suggest-control`);
+  shows server summary, explanation, confidence, warnings, validation errors; "פתח בעורך" hands the definition to
+  `ControlDraftService` → `/controls/new?draft=1` (source AI). Nothing is saved or run there. "מה נשלח ל-AI" loads
+  `GET /api/ai/prompt-preview` on demand. 503 / no connection → Hebrew "service unavailable" notice with a link to manual creation.
 - `core/api`: typed DTOs + `MetadataApi`/`ControlsApi`/`RunsApi`; `apiErrorInterceptor` turns every failure into `ApiError`
   (Hebrew ProblemDetails, `validationErrors` with JSON paths, `runId`). `ProblemAlert` shows it; `describePath` turns a path into "תנאי 2 › 1".
 - `core/definition`: wire model + editor tree (ids), conversion, local completeness checks with server-style paths, Hebrew summary.
 - Condition builder: `ConditionContext` (per form: fields, operators, errors) → recursive `condition-group` ↔ `condition-rule`
   → shared `field-picker` (grouped by relation path, searchable), `operator-select`, `value-input` (by type), `operand-editor`
   (value / other field / today ± days / now). Errors from `controls/validate` (debounced) and from save are shown on the rule by path.
+  The "וגם"/"או" label between conditions is a button that switches the whole group's logic.
 - `ControlForm` is reusable and takes a `seed` (`ControlSeed`) — stage B should hand the AI suggestion to it (source `AI`).
-- Results: `results-table` (generic columns from the run, list values by name, server-side sort), typed filters (canonical values), paging.
+- Results: `results-table` (record id column — the real key, not the row number; the display name only when it differs;
+  generic columns from the run, list values by name, server-side sort), typed filters (canonical values), paging.
+- Look: toolbar and main buttons in dark blue `#12233d`; the toolbar never scrolls (texts collapse at 1000px / 760px).
+- Reasons for `isEmpty` / `isNotEmpty`: "{field}: חסר ערך" / "{field}: קיים ערך" (`ViolationReasonBuilder`).
 
 ## AI layer (implemented)
 See `docs/architecture.md` ("שכבת ה-AI") and `ai-service/README.md`. `POST /api/ai/suggest-control {text}` →

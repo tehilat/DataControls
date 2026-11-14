@@ -164,6 +164,30 @@ export interface RunListQuery {
 
 export type SortDirection = 'asc' | 'desc';
 
+/** POST /api/ai/suggest-control — a proposal only: nothing was saved or run. */
+export interface AiSuggestionDto {
+  /** null when the AI could not translate the request */
+  definition: ControlDefinition | null;
+  isValid: boolean;
+  rootEntity: string | null;
+  rootEntityDisplayName: string | null;
+  /** Hebrew summary built by the server from the catalog — what the control will actually check */
+  summary: string | null;
+  explanation: string;
+  /** 0–1 */
+  confidence: number;
+  warnings: string[];
+  validationErrors: ValidationErrorDto[];
+}
+
+/** GET /api/ai/prompt-preview — what a real model would receive. */
+export interface AiPromptPreviewDto {
+  provider: string;
+  system: string;
+  user: string;
+  responseSchema: unknown;
+}
+
 export interface ViolationQuery {
   page: number;
   pageSize: number;
