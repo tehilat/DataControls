@@ -1,0 +1,605 @@
+{
+  "text": "רחפן פעיל במוקד סגור",
+  "catalog": {
+    "version": 1,
+    "entities": [
+      {
+        "key": "Delivery",
+        "displayName": "משלוח",
+        "displayNamePlural": "משלוחים",
+        "fields": [
+          {
+            "path": "DeliveryId",
+            "displayName": "מספר משלוח",
+            "dataType": "number"
+          },
+          {
+            "path": "PackageWeightKg",
+            "displayName": "משקל חבילה",
+            "dataType": "number",
+            "unit": "ק\"ג"
+          },
+          {
+            "path": "DistanceKm",
+            "displayName": "מרחק משלוח",
+            "dataType": "number",
+            "unit": "ק\"מ"
+          },
+          {
+            "path": "DispatchedAt",
+            "displayName": "זמן יציאה",
+            "dataType": "datetime"
+          },
+          {
+            "path": "DeliveredAt",
+            "displayName": "זמן מסירה",
+            "dataType": "datetime"
+          },
+          {
+            "path": "Status",
+            "displayName": "סטטוס משלוח",
+            "dataType": "enum",
+            "options": [
+              {
+                "value": "Pending",
+                "displayName": "ממתין"
+              },
+              {
+                "value": "InTransit",
+                "displayName": "בדרך"
+              },
+              {
+                "value": "Delivered",
+                "displayName": "נמסר"
+              },
+              {
+                "value": "Failed",
+                "displayName": "נכשל"
+              }
+            ]
+          },
+          {
+            "path": "Drone.DroneId",
+            "displayName": "מספר רחפן (רחפן)",
+            "dataType": "number"
+          },
+          {
+            "path": "Drone.SerialNumber",
+            "displayName": "מספר סידורי (רחפן)",
+            "dataType": "text"
+          },
+          {
+            "path": "Drone.Model",
+            "displayName": "דגם (רחפן)",
+            "dataType": "text"
+          },
+          {
+            "path": "Drone.MaxPayloadKg",
+            "displayName": "כושר נשיאה (רחפן)",
+            "dataType": "number",
+            "unit": "ק\"ג"
+          },
+          {
+            "path": "Drone.MaxRangeKm",
+            "displayName": "טווח טיסה (רחפן)",
+            "dataType": "number",
+            "unit": "ק\"מ"
+          },
+          {
+            "path": "Drone.LastMaintenance",
+            "displayName": "תחזוקה אחרונה (רחפן)",
+            "dataType": "date"
+          },
+          {
+            "path": "Drone.NextMaintenanceDue",
+            "displayName": "מועד תחזוקה הבא (רחפן)",
+            "dataType": "date"
+          },
+          {
+            "path": "Drone.Status",
+            "displayName": "סטטוס רחפן (רחפן)",
+            "dataType": "enum",
+            "options": [
+              {
+                "value": "Active",
+                "displayName": "בשירות"
+              },
+              {
+                "value": "Maintenance",
+                "displayName": "בתחזוקה"
+              },
+              {
+                "value": "Retired",
+                "displayName": "הוצא משירות"
+              }
+            ]
+          },
+          {
+            "path": "Drone.Hub.HubId",
+            "displayName": "מספר מוקד (מוקד)",
+            "dataType": "number"
+          },
+          {
+            "path": "Drone.Hub.Name",
+            "displayName": "שם מוקד (מוקד)",
+            "dataType": "text"
+          },
+          {
+            "path": "Drone.Hub.City",
+            "displayName": "עיר מוקד (מוקד)",
+            "dataType": "text"
+          },
+          {
+            "path": "Drone.Hub.IsActive",
+            "displayName": "מוקד פעיל (מוקד)",
+            "dataType": "boolean"
+          },
+          {
+            "path": "Pilot.PilotId",
+            "displayName": "מספר מפעיל (מפעיל)",
+            "dataType": "number"
+          },
+          {
+            "path": "Pilot.FullName",
+            "displayName": "שם מפעיל (מפעיל)",
+            "dataType": "text"
+          },
+          {
+            "path": "Pilot.LicenseNumber",
+            "displayName": "מספר רישיון (מפעיל)",
+            "dataType": "text"
+          },
+          {
+            "path": "Pilot.LicenseExpiry",
+            "displayName": "תוקף רישיון (מפעיל)",
+            "dataType": "date"
+          },
+          {
+            "path": "Pilot.IsActive",
+            "displayName": "מפעיל פעיל (מפעיל)",
+            "dataType": "boolean"
+          },
+          {
+            "path": "Customer.CustomerId",
+            "displayName": "מספר לקוח (לקוח)",
+            "dataType": "number"
+          },
+          {
+            "path": "Customer.FullName",
+            "displayName": "שם לקוח (לקוח)",
+            "dataType": "text"
+          },
+          {
+            "path": "Customer.Phone",
+            "displayName": "טלפון (לקוח)",
+            "dataType": "text"
+          },
+          {
+            "path": "Customer.Email",
+            "displayName": "אימייל (לקוח)",
+            "dataType": "text"
+          },
+          {
+            "path": "Customer.City",
+            "displayName": "עיר (לקוח)",
+            "dataType": "text"
+          },
+          {
+            "path": "Customer.Address",
+            "displayName": "כתובת (לקוח)",
+            "dataType": "text"
+          }
+        ]
+      },
+      {
+        "key": "Drone",
+        "displayName": "רחפן",
+        "displayNamePlural": "רחפנים",
+        "fields": [
+          {
+            "path": "DroneId",
+            "displayName": "מספר רחפן",
+            "dataType": "number"
+          },
+          {
+            "path": "SerialNumber",
+            "displayName": "מספר סידורי",
+            "dataType": "text"
+          },
+          {
+            "path": "Model",
+            "displayName": "דגם",
+            "dataType": "text"
+          },
+          {
+            "path": "MaxPayloadKg",
+            "displayName": "כושר נשיאה",
+            "dataType": "number",
+            "unit": "ק\"ג"
+          },
+          {
+            "path": "MaxRangeKm",
+            "displayName": "טווח טיסה",
+            "dataType": "number",
+            "unit": "ק\"מ"
+          },
+          {
+            "path": "LastMaintenance",
+            "displayName": "תחזוקה אחרונה",
+            "dataType": "date"
+          },
+          {
+            "path": "NextMaintenanceDue",
+            "displayName": "מועד תחזוקה הבא",
+            "dataType": "date"
+          },
+          {
+            "path": "Status",
+            "displayName": "סטטוס רחפן",
+            "dataType": "enum",
+            "options": [
+              {
+                "value": "Active",
+                "displayName": "בשירות"
+              },
+              {
+                "value": "Maintenance",
+                "displayName": "בתחזוקה"
+              },
+              {
+                "value": "Retired",
+                "displayName": "הוצא משירות"
+              }
+            ]
+          },
+          {
+            "path": "Hub.HubId",
+            "displayName": "מספר מוקד (מוקד)",
+            "dataType": "number"
+          },
+          {
+            "path": "Hub.Name",
+            "displayName": "שם מוקד (מוקד)",
+            "dataType": "text"
+          },
+          {
+            "path": "Hub.City",
+            "displayName": "עיר מוקד (מוקד)",
+            "dataType": "text"
+          },
+          {
+            "path": "Hub.IsActive",
+            "displayName": "מוקד פעיל (מוקד)",
+            "dataType": "boolean"
+          }
+        ]
+      },
+      {
+        "key": "Hub",
+        "displayName": "מוקד",
+        "displayNamePlural": "מוקדים",
+        "fields": [
+          {
+            "path": "HubId",
+            "displayName": "מספר מוקד",
+            "dataType": "number"
+          },
+          {
+            "path": "Name",
+            "displayName": "שם מוקד",
+            "dataType": "text"
+          },
+          {
+            "path": "City",
+            "displayName": "עיר מוקד",
+            "dataType": "text"
+          },
+          {
+            "path": "IsActive",
+            "displayName": "מוקד פעיל",
+            "dataType": "boolean"
+          }
+        ]
+      },
+      {
+        "key": "Pilot",
+        "displayName": "מפעיל",
+        "displayNamePlural": "מפעילים",
+        "fields": [
+          {
+            "path": "PilotId",
+            "displayName": "מספר מפעיל",
+            "dataType": "number"
+          },
+          {
+            "path": "FullName",
+            "displayName": "שם מפעיל",
+            "dataType": "text"
+          },
+          {
+            "path": "LicenseNumber",
+            "displayName": "מספר רישיון",
+            "dataType": "text"
+          },
+          {
+            "path": "LicenseExpiry",
+            "displayName": "תוקף רישיון",
+            "dataType": "date"
+          },
+          {
+            "path": "IsActive",
+            "displayName": "מפעיל פעיל",
+            "dataType": "boolean"
+          }
+        ]
+      },
+      {
+        "key": "Customer",
+        "displayName": "לקוח",
+        "displayNamePlural": "לקוחות",
+        "fields": [
+          {
+            "path": "CustomerId",
+            "displayName": "מספר לקוח",
+            "dataType": "number"
+          },
+          {
+            "path": "FullName",
+            "displayName": "שם לקוח",
+            "dataType": "text"
+          },
+          {
+            "path": "Phone",
+            "displayName": "טלפון",
+            "dataType": "text"
+          },
+          {
+            "path": "Email",
+            "displayName": "אימייל",
+            "dataType": "text"
+          },
+          {
+            "path": "City",
+            "displayName": "עיר",
+            "dataType": "text"
+          },
+          {
+            "path": "Address",
+            "displayName": "כתובת",
+            "dataType": "text"
+          }
+        ]
+      }
+    ],
+    "operators": [
+      {
+        "key": "eq",
+        "displayName": "שווה ל",
+        "requiresValue": true
+      },
+      {
+        "key": "neq",
+        "displayName": "שונה מ",
+        "requiresValue": true
+      },
+      {
+        "key": "gt",
+        "displayName": "גדול מ",
+        "requiresValue": true
+      },
+      {
+        "key": "gte",
+        "displayName": "גדול או שווה ל",
+        "requiresValue": true
+      },
+      {
+        "key": "lt",
+        "displayName": "קטן מ",
+        "requiresValue": true
+      },
+      {
+        "key": "lte",
+        "displayName": "קטן או שווה ל",
+        "requiresValue": true
+      },
+      {
+        "key": "contains",
+        "displayName": "מכיל",
+        "requiresValue": true
+      },
+      {
+        "key": "isEmpty",
+        "displayName": "ריק",
+        "requiresValue": false
+      },
+      {
+        "key": "isNotEmpty",
+        "displayName": "לא ריק",
+        "requiresValue": false
+      }
+    ],
+    "typeOperators": [
+      {
+        "dataType": "number",
+        "operator": "eq",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "number",
+        "operator": "neq",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "number",
+        "operator": "gt",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "number",
+        "operator": "gte",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "number",
+        "operator": "lt",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "number",
+        "operator": "lte",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "number",
+        "operator": "isEmpty",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "number",
+        "operator": "isNotEmpty",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "text",
+        "operator": "eq",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "text",
+        "operator": "neq",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "text",
+        "operator": "contains",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "text",
+        "operator": "isEmpty",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "text",
+        "operator": "isNotEmpty",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "date",
+        "operator": "eq",
+        "displayName": "בתאריך",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "date",
+        "operator": "neq",
+        "displayName": "לא בתאריך",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "date",
+        "operator": "gt",
+        "displayName": "אחרי",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "date",
+        "operator": "gte",
+        "displayName": "באותו מועד או אחרי",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "date",
+        "operator": "lt",
+        "displayName": "לפני",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "date",
+        "operator": "lte",
+        "displayName": "באותו מועד או לפני",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "date",
+        "operator": "isEmpty",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "date",
+        "operator": "isNotEmpty",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "datetime",
+        "operator": "eq",
+        "displayName": "בתאריך",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "datetime",
+        "operator": "neq",
+        "displayName": "לא בתאריך",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "datetime",
+        "operator": "gt",
+        "displayName": "אחרי",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "datetime",
+        "operator": "gte",
+        "displayName": "באותו מועד או אחרי",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "datetime",
+        "operator": "lt",
+        "displayName": "לפני",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "datetime",
+        "operator": "lte",
+        "displayName": "באותו מועד או לפני",
+        "allowFieldCompare": true
+      },
+      {
+        "dataType": "datetime",
+        "operator": "isEmpty",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "datetime",
+        "operator": "isNotEmpty",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "boolean",
+        "operator": "eq",
+        "displayName": "הוא",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "boolean",
+        "operator": "neq",
+        "displayName": "אינו",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "enum",
+        "operator": "eq",
+        "displayName": "הוא",
+        "allowFieldCompare": false
+      },
+      {
+        "dataType": "enum",
+        "operator": "neq",
+        "displayName": "אינו",
+        "allowFieldCompare": false
+      }
+    ]
+  }
+}
