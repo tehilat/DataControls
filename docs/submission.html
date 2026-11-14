@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>רדאר - בקרות איכות נתונים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --text: #1b1f27; --muted: #5a6272; --border: #c9d1dc; --head-bg: #eef2f7;
+  --accent: #12233d; --code-bg: #f4f6f9;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: #e9edf2; color: var(--text);
+  font-family: Heebo, "Segoe UI", Arial, sans-serif; font-size: 11pt; line-height: 1.6;
+}
+main { max-width: 210mm; margin: 24px auto; background: #fff; padding: 18mm 18mm 20mm; box-shadow: 0 1px 6px rgb(0 0 0 / .15); }
+h1, h2, h3 { color: var(--accent); line-height: 1.3; }
+h2 { font-size: 17pt; border-bottom: 2px solid var(--accent); padding-bottom: 4px; margin: 0 0 12px; }
+h3 { font-size: 12.5pt; margin: 18px 0 6px; }
+p { margin: 6px 0 10px; }
+ul, ol { margin: 6px 0 10px; padding-inline-start: 22px; }
+li { margin: 2px 0; }
+a { color: #0b4a8b; }
+strong { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 10pt; }
+th, td { border: 1px solid var(--border); padding: 5px 8px; text-align: start; vertical-align: top; }
+th { background: var(--head-bg); font-weight: 600; }
+tr { break-inside: avoid; }
+code {
+  font-family: Consolas, "Cascadia Mono", "Courier New", monospace; font-size: 9pt;
+  background: var(--code-bg); border: 1px solid #e1e6ee; border-radius: 3px; padding: 0 3px;
+  unicode-bidi: isolate;
+}
+pre {
+  direction: ltr; text-align: left; background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px 12px; margin: 8px 0 14px; overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+  font-size: 8.6pt; line-height: 1.45; break-inside: avoid;
+}
+pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+.chapter { margin-top: 30px; }
+
+/* cover page */
+.cover { min-height: 245mm; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.cover h1 { font-size: 34pt; margin: 0 0 10px; }
+.cover .subtitle { font-size: 14pt; color: var(--muted); margin: 0 0 40px; }
+.cover .meta p { font-size: 13pt; margin: 4px 0; }
+.cover .radar { font-size: 56pt; line-height: 1; margin-bottom: 18px; color: var(--accent); }
+.toc { margin: 48px auto 0; text-align: start; max-width: 120mm; }
+.toc h2 { font-size: 13pt; border: 0; text-align: center; margin-bottom: 6px; }
+.toc ol { list-style: none; padding: 0; } /* chapter titles carry their own numbers */
+.toc li { margin: 3px 0; }
+
+@page { size: A4; margin: 14mm 14mm 15mm; }
+@media print {
+  body { background: #fff; font-size: 10pt; line-height: 1.5; }
+  p { margin: 4px 0 7px; }
+  h3 { margin: 12px 0 4px; }
+  table { font-size: 9.3pt; margin: 6px 0 10px; }
+  th, td { padding: 3px 7px; }
+  pre { font-size: 8pt; padding: 7px 10px; margin: 6px 0 10px; }
+  main { margin: 0; padding: 0; max-width: none; box-shadow: none; }
+  .cover { min-height: 255mm; }
+  .chapter { margin-top: 0; break-before: page; }
+  .chapter.same-page { margin-top: 20px; break-before: auto; }
+  h2, h3 { break-after: avoid; }
+  a { color: inherit; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<main>
+<section class="cover">
+<div class="radar" aria-hidden="true">◎</div>
+<h1>רדאר - בקרות איכות נתונים</h1><p class="subtitle">מערכת גנרית להגדרה ולהרצה של בקרות איכות נתונים, במונחים עסקיים, בלי SQL</p><div class="meta"><p><strong>מגישה:</strong> תהילה</p><p><strong>תאריך:</strong> 14/11/2026</p></div>
+<nav class="toc" aria-label="תוכן העניינים"><h2>תוכן העניינים</h2><ol><li><a href="#ch1">1. סקירה ותחום הנתונים</a></li><li><a href="#ch2">2. ארכיטקטורה ומנגנון הבקרות</a></li><li><a href="#ch3">3. דוגמאות בקרות</a></li><li><a href="#ch4">4. שלב ב': הגדרת בקרה בשפה חופשית</a></li><li><a href="#ch5">5. הנחות, מגבלות והרחבות</a></li><li><a href="#ch6">6. כלי AI ששימשו בפיתוח</a></li><li><a href="#ch7">7. מסמכים מפורטים</a></li></ol></nav>
+</section>
+<section class="chapter" id="ch1">
+<h2>1. סקירה ותחום הנתונים</h2>
+<p><strong>רדאר</strong> מאפשרת למשתמש עסקי להגדיר בקרות איכות נתונים בלי לכתוב SQL ובלי להכיר את שמות הטבלאות. המשתמש בוחר ישות, שדות ותנאים בעברית, מריץ את הבקרה מול SQL Server, ומקבל את הרשומות החריגות עם סיבה קריאה לכל רשומה. בשלב ב' אפשר לתאר בקרה במילים, ולקבל הצעה שמוצגת לאישור לפני שמירה.</p>
+<p><strong>תחום הנתונים: צי רחפני משלוחים.</strong> חמש ישויות עסקיות בסכמה <code dir="ltr">ops</code>:</p>
+<table><thead><tr><th scope="col">ישות</th><th scope="col">רשומות בדוגמה</th><th scope="col">תפקיד</th></tr></thead><tbody><tr><td>מוקד</td><td>5</td><td>מוקד הפעלה שממנו יוצאים הרחפנים (פעיל / סגור)</td></tr><tr><td>רחפן</td><td>10</td><td>כושר נשיאה, טווח טיסה, סטטוס, מועדי תחזוקה. שייך למוקד</td></tr><tr><td>מפעיל</td><td>6</td><td>מפעיל מורשה: מספר רישיון, תוקף, פעיל</td></tr><tr><td>לקוח</td><td>8</td><td>פרטי קשר וכתובת מסירה</td></tr><tr><td>משלוח</td><td>22</td><td>משקל, מרחק, זמני יציאה ומסירה, סטטוס. מקושר לרחפן, למפעיל וללקוח</td></tr></tbody></table>
+<p><strong>הקשרים</strong> (כולם רבים-ליחיד, מהילד להורה): משלוח → רחפן → מוקד, משלוח → מפעיל, משלוח → לקוח. בזכות זה, בקרה על משלוח יכולה להשתמש בשדות כמו "כושר נשיאה (רחפן)" או "מוקד פעיל (רחפן › מוקד)".</p>
+<p>הנתונים כוללים רשומות שגויות מבודדות (כל אחת נתפסת רק בבקרה שלה) ומקרי גבול תקינים. התאריכים יחסיים ליום הטעינה, כך שהבקרות נשארות נכונות בכל יום. סקריפט אופציונלי (<code dir="ltr">06</code>) מוסיף ישות שישית, "התראת מזג אוויר", דרך Metadata בלבד.</p>
+</section>
+<section class="chapter" id="ch2">
+<h2>2. ארכיטקטורה ומנגנון הבקרות</h2>
+<h3>שכבות</h3>
+<pre dir="ltr"><code>Angular 22             <bdi dir="rtl">ממשק בעברית: רשימת בקרות · עורך תנאים רקורסיבי · תוצאות · צור בעזרת AI</bdi>
+   │ /api (proxy)
+.NET 10 Web API
+  Api                  Controllers · DTOs · OpenAPI · <bdi dir="rtl">שגיאות ProblemDetails בעברית</bdi>
+  Application          DefinitionBinder · <bdi dir="rtl">שירותי בקרות, הרצות, קטלוג והצעות AI · ממשקים</bdi>
+  Infrastructure       SqlMetadataProvider · SqlQueryBuilder · SqlControlRunner · AI HTTP client
+  Domain               ControlDefinition (group / rule / operand) · MetadataCatalog
+   │ Dapper                                │ HTTP
+SQL Server: ops · meta · ctl               Python ai-service: PromptBuilder · AiProvider (Mock)</code></pre>
+<p>שלוש סכמות: <code dir="ltr">ops</code> לנתונים העסקיים, <code dir="ltr">meta</code> לקטלוג העסקי, <code dir="ltr">ctl</code> לבקרות, להרצות ולתוצאות. כל שכבה במנוע נמצאת מאחורי ממשק (<code dir="ltr">IMetadataProvider</code>, <code dir="ltr">IQueryBuilder</code>, <code dir="ltr">IControlRunner</code>, <code dir="ltr">IAiControlGenerator</code>).</p>
+<h3>Metadata: המפתח לגנריות</h3>
+<p>הטבלאות <code dir="ltr">meta.Entities</code>, <code dir="ltr">meta.Fields</code>, <code dir="ltr">meta.FieldOptions</code>, <code dir="ltr">meta.Relations</code>, <code dir="ltr">meta.Operators</code> ו-<code dir="ltr">meta.DataTypeOperators</code> ממפות מונחים עסקיים בעברית ("משלוח", "משקל חבילה", "הוא", "לפני") לטבלאות, לעמודות, לקשרים ולאופרטורים המותרים לכל סוג שדה. ב-<code dir="ltr">meta</code> לא נשמר SQL. אין בקוד (C#, Python או Angular) אף שם של טבלה או עמודה עסקית. ישות חדשה מתווספת בשורות ב-<code dir="ltr">meta</code> בלבד, והיא מופיעה מיד בממשק, במנוע ובקטלוג שנשלח ל-AI.</p>
+<h3>בקרה = נתונים, לא SQL</h3>
+<p>בקרה נשמרת ב-<code dir="ltr">ctl.Controls</code> כעץ תנאים ב-JSON:</p>
+<pre dir="ltr"><code>{ "version": 1, "rootEntity": "Delivery", "condition":
+  { "type": "rule", "field": "PackageWeightKg", "operator": "gt",
+    "compareTo": { "kind": "field", "field": "Drone.MaxPayloadKg" } } }</code></pre>
+<p>צומת הוא <code dir="ltr">group</code> (AND / OR, מקונן) או <code dir="ltr">rule</code> (שדה, אופרטור, ערך השוואה). ערך ההשוואה יכול להיות ערך קבוע, שדה אחר, "היום ± ימים" או "עכשיו". נתיב שדה עובר דרך קשרים (<code dir="ltr">Drone.Hub.IsActive</code>).</p>
+<h3>הצינור</h3>
+<pre dir="ltr"><code>meta.*  +  ctl.Controls.DefinitionJson
+   │
+   ▼  ControlDefinitionSerializer   <bdi dir="rtl">הופך את ה-JSON למודל</bdi>
+   ▼  DefinitionBinder              <bdi dir="rtl">ולידציה מול הקטלוג: שדות, אופרטור מול סוג, טווחי ערכים</bdi>
+   ▼  SqlQueryBuilder               <bdi dir="rtl">שאילתת SELECT עם פרמטרים, וחיבור קשרים לפי meta.Relations</bdi>
+   ▼  SqlControlRunner              <bdi dir="rtl">הרצה תחת EXECUTE AS USER ואז REVERT, עם timeout ו-TOP</bdi>
+   ▼  ViolationReasonBuilder        <bdi dir="rtl">סיבה בעברית לכל רשומה חריגה</bdi>
+   ▼  ctl.ControlRunViolations      <bdi dir="rtl">שמירת החריגות: paging, חיפוש, סינון ומיון לפי סוג</bdi></code></pre>
+<p>דוגמה לסיבה: "משקל חבילה (4.5 ק"ג) גדול מ-כושר נשיאה (רחפן) (3 ק"ג)". כל שגיאות הוולידציה מוחזרות יחד, בעברית, עם נתיב JSON (למשל <code dir="ltr">condition.children[1].field</code>), והממשק מציג אותן על התנאי עצמו.</p>
+<p>ה-Binder משמש גם לשמירה, גם להרצה, גם לתצוגה מקדימה וגם להצעות AI, כך שיש מקום אחד לכל כללי התקינות. מספר החריגות האמיתי מוחזר תמיד (<code dir="ltr">COUNT(*) OVER ()</code>), גם כשהתוצאה נחתכת במגבלת השורות.</p>
+<h3>אבטחה</h3>
+<ul><li><strong>Whitelist:</strong> כל מזהה (טבלה, עמודה, קשר) מגיע רק מה-Metadata, שנבדק גם מול <code dir="ltr">sys.columns</code> ומול regex של מזהה. ישות או שדה שלא עומדים בזה נפסלים מהקטלוג. אין API שמקבל SQL או שם פיזי.</li><li><strong>פרמטרים:</strong> כל ערך הוא פרמטר. טקסט נשלח תמיד כ-nvarchar, כולל escape ל-<code dir="ltr">LIKE</code>. אין שרשור ערכים ל-SQL.</li><li><strong>הרשאות מינימליות:</strong> כל הרצה מתבצעת תחת <code dir="ltr">EXECUTE AS USER = &#x27;controls_runner&#x27;</code>, שיש לו רק SELECT על <code dir="ltr">ops</code>. <code dir="ltr">99_verify.sql</code> מוכיח ש-UPDATE על <code dir="ltr">ops</code> ו-SELECT על <code dir="ltr">ctl</code> נחסמים.</li><li><strong>SELECT בלבד</strong>, עם timeout ומגבלת שורות. אם לא ניתן לאמת שההתחזות בוטלה, ה-connection pool מתרוקן.</li><li><strong>אופרטור מול סוג:</strong> אין "גדול מ" על טקסט, אין "מכיל" על מספר. ניסיונות injection בנתיבים, בערכים, באופרטורים וב-Metadata זדוני מכוסים בבדיקות.</li><li>ה-SQL שנוצר לא נחשף ב-API, כי הוא מכיל שמות פיזיים.</li></ul>
+</section>
+<section class="chapter" id="ch3">
+<h2>3. דוגמאות בקרות</h2>
+<p>14 בקרות לדוגמה נוצרות ב-<code dir="ltr">04_sample_controls.sql</code>. התוצאות נבדקות פעמיים: <code dir="ltr">99_verify.sql</code> מריץ שאילתות שנכתבו ידנית, ובדיקות האינטגרציה מריצות את אותן בקרות דרך המנוע ומשוות לאותן תוצאות.</p>
+<table><thead><tr><th scope="col">#</th><th scope="col">בקרה</th><th scope="col">ישות</th><th scope="col">תוצאה צפויה</th></tr></thead><tbody><tr><td>1</td><td>משקל חבילה חורג מכושר הנשיאה</td><td>משלוח</td><td>משלוח 10</td></tr><tr><td>2</td><td>מרחק משלוח חורג מטווח הטיסה</td><td>משלוח</td><td>משלוח 11</td></tr><tr><td>3</td><td>זמן מסירה לפני זמן היציאה</td><td>משלוח</td><td>משלוח 12</td></tr><tr><td>4</td><td>מפעיל ללא רישיון בתוקף (OR)</td><td>משלוח</td><td>משלוחים 13, 14</td></tr><tr><td>5</td><td>משלוח שנמסר ללא זמן מסירה</td><td>משלוח</td><td>משלוח 15</td></tr><tr><td>6</td><td>רחפן פעיל במוקד סגור</td><td>רחפן</td><td>רחפן 9</td></tr><tr><td>7</td><td>רחפן בשירות עם תחזוקה באיחור ("היום")</td><td>רחפן</td><td>רחפנים 4, 5</td></tr><tr><td>8</td><td>לקוח ללא פרטי קשר</td><td>לקוח</td><td>לקוח 6</td></tr><tr><td>9</td><td>משלוח כבד וארוך ברחפן עם תחזוקה באיחור</td><td>משלוח</td><td>משלוח 9</td></tr><tr><td>10</td><td>סטטוס משלוח לא עקבי (קבוצות מקוננות)</td><td>משלוח</td><td>משלוחים 15, 16</td></tr><tr><td>11</td><td>זמן יציאה עתידי ("עכשיו")</td><td>משלוח</td><td>משלוח 17</td></tr><tr><td>12</td><td>משקל חבילה שלילי</td><td>משלוח</td><td>משלוח 18</td></tr><tr><td>13</td><td>משלוח ברחפן שנמצא בתחזוקה</td><td>משלוח</td><td>משלוח 19</td></tr><tr><td>14</td><td>משלוח ע"י מפעיל לא פעיל</td><td>משלוח</td><td>משלוח 20</td></tr></tbody></table>
+<p><strong>3 בקרות לדמו</strong>, שלא קיימות בנתונים ומוגדרות במסך במהלך ההצגה:</p>
+<table><thead><tr><th scope="col">בקרה</th><th scope="col">הגדרה במסך</th><th scope="col">תוצאה צפויה</th></tr></thead><tbody><tr><td>א. לקוח ללא כתובת</td><td>לקוח ← "כתובת" ריק</td><td>לקוח 8, סיבה "כתובת: חסר ערך"</td></tr><tr><td>ב. רחפן בשירות שלא עבר תחזוקה יותר משנה</td><td>רחפן ← סטטוס "בשירות" <strong>וגם</strong> "תחזוקה אחרונה" לפני היום − 365 ימים</td><td>רחפנים 4, 5 (רחפן 7 הוצא משירות ולכן לא נתפס)</td></tr><tr><td>ג. התראת מזג אוויר לא סבירה (אחרי <code dir="ltr">06</code>)</td><td>התראת מזג אוויר ← "סיום" לפני "תחילה" <strong>או</strong> "מהירות רוח" מעל 200</td><td>התראות 3, 4. ישות חדשה, בלי שורת קוד</td></tr></tbody></table>
+</section>
+<section class="chapter" id="ch4">
+<h2>4. שלב ב': הגדרת בקרה בשפה חופשית</h2>
+<h3>הזרימה</h3>
+<pre dir="ltr"><code>Frontend               המשתמש כותב במסך "<bdi>צור בעזרת AI</bdi>": "<bdi>רחפן פעיל במוקד סגור</bdi>"
+   ▼  POST /api/ai/suggest-control {text}
+.NET AiSuggestionService     <bdi dir="rtl">בונה קטלוג עסקי, בלי שמות פיזיים, וקורא ל-IAiControlGenerator</bdi>
+   ▼  POST /generate-control {text, catalog}
+Python ai-service      PromptBuilder · AiProvider (Mock) · <bdi dir="rtl">ולידציה מול הקטלוג</bdi>
+   ▼  {definition, explanation, confidence, warnings}
+.NET                   <bdi dir="rtl">ולידציה עם אותו Binder של שלב א&#x27;, ותקציר בעברית מהקטלוג</bdi>
+   ▼  AiSuggestionDto
+Frontend               <bdi dir="rtl">המשתמש בודק ← &quot;פתח בעורך&quot; ← תצוגה מקדימה ← שמירה (Source = AI) ← הרצה</bdi></code></pre>
+<h3>מבנה התשובה</h3>
+<pre dir="ltr"><code>{ "definition": { "version": 1, "rootEntity": "Drone", "condition": { ... } },
+  "isValid": true, "rootEntity": "Drone", "rootEntityDisplayName": "<bdi>רחפן</bdi>",
+  "summary": "<bdi>יאותרו רחפנים שבהם סטטוס רחפן: בשירות וגם מוקד פעיל (מוקד): לא.</bdi>",
+  "explanation": "<bdi>הבקרה תאתר רחפנים בסטטוס &#x27;בשירות&#x27; שמשויכים למוקד שאינו פעיל.</bdi>",
+  "confidence": 0.9,
+  "warnings": ["<bdi>&#x27;רחפן פעיל&#x27; פורש כרחפן בסטטוס &#x27;בשירות&#x27;.</bdi>"],
+  "validationErrors": [] }</code></pre>
+<p><code dir="ltr">definition</code> הוא בדיוק אותו DefinitionJson של שלב א'. <code dir="ltr">summary</code> נבנה ב-.NET מהקטלוג, ולא ע"י ה-AI, ולכן הוא מתאר את מה שבאמת ירוץ. בקשה לא מזוהה מחזירה <code dir="ltr">definition: null</code> עם הסבר. שירות AI לא זמין מחזיר 503 בעברית, וכל השאר ממשיך לעבוד. ה-Mock מזהה 5 בקשות לדוגמה, למשל "משקל מעל כושר נשיאה", "לקוח בלי טלפון ובלי אימייל" ו"מפעיל עם רישיון שפג".</p>
+<h3>הפרדה מהמנוע</h3>
+<ul><li>תשובת ה-AI היא <strong>קלט לא מהימן</strong>: היא עוברת ולידציה ב-Python ואז ב-<code dir="ltr">DefinitionBinder</code> של ה-.NET. SQL לא נוצר ממנה ישירות.</li><li>ה-AI <strong>רק מציע</strong>: שירות ההצעות לא תלוי ב-repository או ב-runner, ולכן אינו יכול לשמור או להריץ.</li><li>מנוע הבקרות לא יודע מאיפה הגיעה הגדרה, ושירות ה-AI לא ניגש ל-DB. החיבור הוא ממשק אחד, <code dir="ltr">IAiControlGenerator</code>.</li><li>"מה נשלח ל-AI" מוצג במסך (<code dir="ltr">/api/ai/prompt-preview</code>): קטלוג עסקי, כללים ומבנה התשובה, בלי שמות טבלאות.</li></ul>
+<h3>החלפת מודל</h3>
+<p>מוסיפים מחלקה שמממשת <code dir="ltr">AiProvider</code> ב-<code dir="ltr">ai-service/providers/</code> (מתודה אחת: <code dir="ltr">generate</code>), רושמים אותה ב-<code dir="ltr">_PROVIDERS</code>, ובוחרים אותה במשתנה הסביבה <code dir="ltr">AI_PROVIDER</code>. ה-prompt, מבנה התשובה, הוולידציה וה-.NET לא משתנים.</p>
+</section>
+<section class="chapter" id="ch5">
+<h2>5. הנחות, מגבלות והרחבות</h2>
+<p><strong>הנחות עיקריות:</strong> המשתמש לא מכיר את מבנה ה-DB; ה-Metadata מתוחזק ע"י גורם טכני; רשומה חריגה = התנאי מתקיים; השוואה ל-NULL לא מתקיימת (משתמשים ב"ריק"); "היום" ו"עכשיו" לפי שעון שרת ה-SQL.</p>
+<p><strong>מגבלות:</strong></p>
+<ul><li><strong>קשרים רבים-ליחיד בלבד.</strong> אין "קיים / לא קיים" על קשר הפוך, ולכן אי אפשר כרגע להגדיר "משלוח שיצא בזמן התראת מזג אוויר פעילה במוקד שלו" (משלוח → רחפן → מוקד ← התראות).</li><li>אין צבירות (COUNT / SUM), אין חישובים בתנאים ("שדה × 1.1"), ואין אופרטורים "בין" ו"אחד מתוך".</li><li>אין אימות משתמשים, תזמון הרצות או מדיניות שמירה להרצות. Metadata מנוהל בסקריפט, לא במסך.</li><li>ה-Mock מזהה רק תרחישים מוגדרים מראש, ואין שיחה מתמשכת עם ה-AI.</li></ul>
+<p><strong>הרחבות מתוכננות:</strong></p>
+<ul><li><strong>תנאי <code dir="ltr">exists</code> על קשר הפוך</strong> (<code dir="ltr">version: 2</code>): צומת עם תנאים פנימיים ו-operand מסוג <code dir="ltr">outer</code> לשדות הרשומה החיצונית, שמתורגם ל-<code dir="ltr">EXISTS</code> עם תת-שאילתה מתואמת. בלי שכפול רשומות, ועם אותו whitelist. בסיס גם לצבירות. חלופה מיידית: View שמחזיר שורה אחת לכל רשומת בסיס ונרשם ב-Metadata.</li><li>מסך ניהול Metadata וסריקת <code dir="ltr">INFORMATION_SCHEMA</code> כטיוטה; אימות משתמשים ותפקידים; תזמון והתראות; ייצוא תוצאות.</li><li>מודל AI אמיתי, שיחה ועריכה בשפה חופשית, וסינון הקטלוג לפי רלוונטיות בקטלוגים גדולים.</li></ul>
+</section>
+<section class="chapter" id="ch6">
+<h2>6. כלי AI ששימשו בפיתוח</h2>
+<table><thead><tr><th scope="col">כלי</th><th scope="col">שימוש</th></tr></thead><tbody><tr><td>Claude Code (Claude Opus 5.5)</td><td>מימוש כל השכבות, בדיקות ותיעוד. עבודה ב-Plan Mode: כל תוכנית נסקרה ואושרה לפני כתיבת קוד</td></tr><tr><td>Claude (צ'אט)</td><td>תכנון ארכיטקטורה ותחום הנתונים, סקירה ביקורתית של התוכניות, הגדרת סביבת הפיתוח (כולל TLS)</td></tr><tr><td>Angular CLI – אינטגרציית AI</td><td><code dir="ltr">frontend/CLAUDE.md</code> עם כללי Angular עדכניים וחיבור לשרת ה-MCP של Angular</td></tr></tbody></table>
+<p><strong>אופן העבודה:</strong> מפרט מפורט לפני קוד (<code dir="ltr">docs/db-instructions.md</code>); תוכנית לכל שלב; שלבים קטנים, שכבה אחת בכל פעם, כל שלב בענף <code dir="ltr">feature/*</code> שמוזג רק אחרי שכל הבדיקות עברו; שני סשנים במקביל ב-<code dir="ltr">git worktree</code> (שירות ה-AI לצד ה-API וה-UI); <code dir="ltr">CLAUDE.md</code> כמסמך הנחיות קבוע שעודכן בסוף כל שלב; ובסוף בדיקת "התקנה מאפס" לפי ה-README. בסיום: 304 בדיקות .NET, 98 בדיקות Python ו-13 בדיקות Angular.</p>
+<p><strong>דוגמאות לכיוון ותיקון של הכלי:</strong> התאמה ל-SQL Express עם אימות Windows (<code dir="ltr">WITHOUT LOGIN</code> ו-<code dir="ltr">EXECUTE AS</code> במקום משתמשים עם סיסמה); שינוי <code dir="ltr">ops.Operators</code> ל-<code dir="ltr">ops.Pilots</code> כדי למנוע בלבול עם אופרטורי ההשוואה; תאריכים יחסיים כדי שהבקרות לא "יתיישנו"; מיון וסינון לפי סוג נתון (ולא כמחרוזת); ממצאי בדיקת UI ידנית (גלישה, מזהה רשומה, ניסוח הסיבות, החלפת וגם/או); ותיעוד מגבלת הקשרים שהתגלתה בבדיקה ידנית.</p>
+<p><strong>מה נבדק ידנית:</strong> כל תוכנית וכל סיכום שלב; ה-UI בדפדפן (RTL, רשימה וסינון, מספרי החריגות מול <code dir="ltr">99_verify.sql</code>, בקרה חדשה מאפס עם תצוגה מקדימה, שמירה והרצה); מסך התוצאות וההיסטוריה; וזרימת ה-AI, כולל מצב שבו השירות אינו זמין. הפירוט המלא: <a href="ai-tools.md">ai-tools.md</a>.</p>
+</section>
+<section class="chapter same-page" id="ch7">
+<h2>7. מסמכים מפורטים</h2>
+<table><thead><tr><th scope="col">מסמך</th><th scope="col">תוכן</th></tr></thead><tbody><tr><td><a href="../README.md">README.md</a></td><td>דרישות מוקדמות, התקנה והרצה צעד אחר צעד, בדיקות, מבנה התיקיות</td></tr><tr><td><a href="architecture.md">architecture.md</a></td><td>הזרימה, ולידציה, בניית SQL, הרצה, שכבת ה-API, שכבת ה-AI וה-Frontend</td></tr><tr><td><a href="control-examples.md">control-examples.md</a></td><td>14 הבקרות עם ה-JSON והתוצאות, ו-3 בקרות הדמו</td></tr><tr><td><a href="stage-b-ai.md">stage-b-ai.md</a></td><td>שלב ב' במלואו: מיפוי לדרישות, חוזים, 5 הבקשות, תכנון המשימה המתקדמת</td></tr><tr><td><a href="assumptions-limitations.md">assumptions-limitations.md</a></td><td>הנחות, מגבלות והרחבות, כולל התכנון המלא של תנאי <code dir="ltr">exists</code></td></tr><tr><td><a href="ai-tools.md">ai-tools.md</a></td><td>כלי ה-AI ששימשו בפיתוח</td></tr><tr><td><a href="db-instructions.md">db-instructions.md</a></td><td>מפרט בסיס הנתונים ומבנה ה-JSON של בקרה</td></tr><tr><td><a href="../ai-service/README.md">ai-service/README.md</a></td><td>שירות ה-AI: endpoints, חוזה הקטלוג, Mock, החלפת מודל</td></tr></tbody></table>
+</section>
+</main>
+</body>
+</html>
