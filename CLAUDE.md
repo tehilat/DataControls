@@ -95,7 +95,8 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
   Build: `cd frontend && npx ng build` (must finish with no errors/warnings). Unit tests: `npx ng test --watch=false` (Vitest).
 - Submission doc: edit `docs/submission.md`, then `python tools/md_to_html.py` regenerates `docs/submission.html`
   (stdlib only; RTL, page break before each "##" chapter, `<!-- same-page -->` keeps a short chapter on the current page,
-  Hebrew inside code blocks isolated with `<bdi>`). Keep it at 8 printed A4 pages.
+  Hebrew inside code blocks isolated with `<bdi>`). Keep it at 8 printed A4 pages. It writes CRLF, matching
+  `docs/submission.html text eol=crlf` in `.gitattributes`, so regenerating unchanged content shows no git change.
 - Tests: `cd backend && dotnet test` (unit + API + integration; integration needs the DB from scripts 01–05 and
   skips itself if it is unreachable). Without DB: `dotnet test --filter "Category!=Integration"` (includes the
   API tests that run on the in-memory catalog via `CatalogOnlyApiFactory`).

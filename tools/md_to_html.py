@@ -282,7 +282,9 @@ def main(argv: list[str]) -> int:
     src = Path(argv[1]) if len(argv) > 1 else DEFAULT_IN
     dst = Path(argv[2]) if len(argv) > 2 else DEFAULT_OUT
     page = Converter(src.read_text(encoding="utf-8")).run()
-    dst.write_text(page, encoding="utf-8", newline="\n")
+    # CRLF, matching ".gitattributes: docs/submission.html text eol=crlf", so regenerating unchanged content
+    # leaves the working copy byte-identical to a fresh checkout (no spurious modification in git status).
+    dst.write_text(page, encoding="utf-8", newline="\r\n")
     print(f"{src} -> {dst} ({len(page):,} chars)")
     return 0
 
