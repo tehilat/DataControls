@@ -1,1 +1,113 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+// ---- Material theme (M3), Hebrew font, light scheme ----
+html {
+  color-scheme: light;
+  @include mat.theme((
+    color: (primary: mat.$azure-palette, tertiary: mat.$violet-palette, theme-type: light),
+    typography: (plain-family: 'Heebo, Arial, sans-serif', brand-family: 'Heebo, Arial, sans-serif'),
+    density: -1,
+  ));
+
+  // app tokens — contrast checked against their backgrounds (WCAG AA)
+  --app-bg: #f4f6f9;
+  --app-surface: #ffffff;
+  --app-surface-alt: #f7f8fb;
+  --app-border: #d9dee7;
+  --app-text: #1b1f27;
+  --app-muted: #5a6272;
+  --app-toolbar-bg: #0b4a8b;
+  --app-toolbar-text: #ffffff;
+  --app-success: #1b7f3b;
+  --app-success-text: #14632d;
+  --app-success-bg: #e5f4ea;
+  --app-warn: #a15c00;
+  --app-warn-bg: #fff4e0;
+  --app-danger: #c62828;
+  --app-danger-text: #a31f1f;
+  --app-danger-bg: #fdecec;
+  --app-ai: #6a3fb5;
+  --app-and: #1f6fd1;
+  --app-and-bg: #e3eefb;
+  --app-and-text: #144e94;
+  --app-or: #b2560a;
+  --app-or-bg: #fdeedd;
+  --app-or-text: #8a4105;
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: Heebo, Arial, sans-serif;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+h1 { font-size: 24px; font-weight: 700; margin: 0; }
+h2 { font-size: 18px; font-weight: 600; }
+
+a { color: var(--mat-sys-primary); }
+:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+
+// ---- shared layout helpers ----
+.page-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; min-height: 48px; }
+.page-header .spacer { flex: 1; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+.toolbar .search { flex: 1 1 260px; max-width: 420px; }
+.table-card { background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 12px; overflow: hidden; }
+.table-scroll { overflow-x: auto; }
+.table-scroll:focus-visible { outline-offset: -2px; }
+.section-card { border-radius: 12px; }
+.section-card mat-card-header { padding-bottom: 8px; }
+.full-width { width: 100%; }
+.muted { color: var(--app-muted); }
+.small { font-size: 13px; }
+.danger-text { color: var(--app-danger-text); }
+.field-label { font-size: 13px; color: var(--app-muted); }
+.field-error, mat-hint.field-error { color: var(--app-danger-text); }
+.big-number { font-size: 36px; font-weight: 700; color: var(--app-danger-text); line-height: 1; }
+.big-number.zero { color: var(--app-success-text); }
+.error-location { font-weight: 600; }
+.inline-errors { margin: 8px 0 0; padding-inline-start: 18px; color: var(--app-danger-text); font-size: 13px; }
+
+// ---- alerts ----
+.alert { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; margin: 0 0 16px; }
+.alert ul { margin: 6px 0 0; padding-inline-start: 18px; }
+.alert-error { background: var(--app-danger-bg); color: var(--app-danger-text); }
+.alert-warn { background: var(--app-warn-bg); color: #6b3d00; }
+.alert-body { display: flex; flex-direction: column; gap: 2px; }
+
+// ---- chips ----
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--app-surface-alt);
+  color: var(--app-muted);
+}
+.chip mat-icon { font-size: 15px; width: 15px; height: 15px; }
+.severity-high { background: var(--app-danger-bg); color: var(--app-danger-text); }
+.severity-medium { background: var(--app-warn-bg); color: #6b3d00; }
+.severity-low { background: var(--app-and-bg); color: var(--app-and-text); }
+.status-succeeded { background: var(--app-success-bg); color: var(--app-success-text); }
+.status-failed { background: var(--app-danger-bg); color: var(--app-danger-text); }
+.status-running { background: var(--app-warn-bg); color: #6b3d00; }
+.chip-muted { background: #eceef2; color: var(--app-muted); }
+
+// ---- tables ----
+.mat-mdc-table { background: transparent; width: 100%; }
+.mat-mdc-header-cell { font-weight: 600; color: var(--app-muted); white-space: nowrap; }
+.mat-mdc-header-row { background: var(--app-surface-alt); }
+
+// ---- buttons / snackbars ----
+.danger-button.mat-mdc-unelevated-button:not(:disabled) { background: var(--app-danger); color: #fff; }
+.mat-mdc-snack-bar-container.snack-error { --mdc-snackbar-container-color: #8e1b1b; --mat-snack-bar-button-color: #fff; }
+.mat-mdc-snack-bar-container.snack-success { --mdc-snackbar-container-color: #14532d; --mat-snack-bar-button-color: #fff; }
+
+// datepicker / autocomplete panels inherit the page direction from <html dir="rtl">
+.field-picker-panel .mat-mdc-optgroup-label { font-weight: 700; color: var(--app-and-text); }
