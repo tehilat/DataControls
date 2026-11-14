@@ -148,7 +148,7 @@
 </div>
 
 @if (previewing() || preview() || previewError()) {
-  <mat-card appearance="outlined" class="section-card preview-card">
+  <mat-card #previewCard appearance="outlined" class="section-card preview-card">
     <mat-card-header>
       <mat-card-title>תצוגה מקדימה</mat-card-title>
       <mat-card-subtitle>הרצה של ההגדרה הנוכחית בלי לשמור — עד 50 רשומות ראשונות</mat-card-subtitle>
@@ -161,26 +161,28 @@
       @if (preview(); as p) {
         @if (previewStale()) {
           <p class="alert alert-warn" role="status">
-            <mat-icon aria-hidden="true">update</mat-icon> ההגדרה השתנתה מאז התצוגה המקדימה. יש להריץ אותה שוב.
+            <mat-icon aria-hidden="true">update</mat-icon> ההגדרה השתנתה - הרץ שוב תצוגה מקדימה
           </p>
         }
-        <div class="preview-stats">
-          <span class="big-number" [class.zero]="p.totalCount === 0">{{ p.totalCount }}</span>
-          <span>
-            {{ p.rootEntityDisplayNamePlural }} חריגים
-            @if (p.truncated) {
-              <span class="muted">(מוצגות {{ p.items.length }} הראשונות)</span>
-            }
-          </span>
-          <span class="muted small">משך: {{ formatDuration(p.durationMs) }}</span>
+        <div class="preview-results" [class.stale]="previewStale()">
+          <div class="preview-stats">
+            <span class="big-number" [class.zero]="p.totalCount === 0">{{ p.totalCount }}</span>
+            <span>
+              {{ p.rootEntityDisplayNamePlural }} חריגים
+              @if (p.truncated) {
+                <span class="muted">(מוצגות {{ p.items.length }} הראשונות)</span>
+              }
+            </span>
+            <span class="muted small">משך: {{ formatDuration(p.durationMs) }}</span>
+          </div>
+          <app-results-table
+            [columns]="p.columns"
+            [rows]="p.items"
+            [options]="previewOptions()"
+            caption="תצוגה מקדימה של הרשומות החריגות"
+            emptyText="לא נמצאו רשומות חריגות — כל הנתונים עומדים בבקרה"
+          />
         </div>
-        <app-results-table
-          [columns]="p.columns"
-          [rows]="p.items"
-          [options]="previewOptions()"
-          caption="תצוגה מקדימה של הרשומות החריגות"
-          emptyText="לא נמצאו רשומות חריגות — כל הנתונים עומדים בבקרה"
-        />
       }
     </mat-card-content>
   </mat-card>

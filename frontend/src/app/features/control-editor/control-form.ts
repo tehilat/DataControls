@@ -1,4 +1,18 @@
-import { Component, computed, DestroyRef, effect, inject, input, linkedSignal, output, signal } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  ElementRef,
+  inject,
+  Injector,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { rxResource, takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { form, FormField, maxLength, required } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
@@ -139,6 +153,8 @@ export class ControlForm {
   protected readonly preview = signal<PreviewDto | null>(null);
   protected readonly previewError = signal<ApiError | null>(null);
   private readonly previewedJson = signal<string | null>(null);
+  private readonly previewCard = viewChild('previewCard', { read: ElementRef });
+  private readonly injector = inject(Injector);
   protected readonly previewStale = computed(() => this.preview() !== null && this.previewedJson() !== this.definitionJson());
   protected readonly previewOptions = computed(
     () => new Map<string, OptionDto[]>(this.ctx.fields().filter((f) => f.relationPath.length === 0).map((f) => [f.path, f.options])),
@@ -208,6 +224,7 @@ export class ControlForm {
     const json = this.definitionJson();
     this.previewing.set(true);
     this.previewError.set(null);
+    this.scrollToPreview();
     this.controlsApi.preview(this.definition(), 50).subscribe({
       next: (result) => {
         this.preview.set(result);
@@ -219,6 +236,21 @@ export class ControlForm {
         this.previewing.set(false);
       },
     });
+  }
+
+  /** Brings the preview card into view once it is rendered (smooth, unless the user prefers reduced motion). */
+  private scrollToPreview(): void {
+    afterNextRender(
+      {
+        write: () => {
+          const card = this.previewCard()?.nativeElement as HTMLElement | undefined;
+          if (!card) return;
+          const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+          card.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        },
+      },
+      { injector: this.injector },
+    );
   }
 
   protected save(): void {
