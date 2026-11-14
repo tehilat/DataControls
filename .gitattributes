@@ -1,6 +1,6 @@
-# Files for the development environment only (AI assistant instructions, editor settings).
+# Files for the development environment only (Angular's generated AI instructions, editor settings).
 # They stay in the repository but are left out of exported archives (git archive -o DataControls.zip HEAD).
-CLAUDE.md export-ignore
+# The root CLAUDE.md is included on purpose: it is the project's working guide, referenced in docs/ai-tools.md.
 frontend/CLAUDE.md export-ignore
 frontend/.mcp.json export-ignore
 frontend/.vscode export-ignore
