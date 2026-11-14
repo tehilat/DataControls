@@ -31,8 +31,8 @@ ControlRunResult (TotalCount, Truncated, Columns, Violations[Id, Values, Reason]
 | פרויקט | אחריות | תלויות |
 |---|---|---|
 | Domain | מודל ההגדרה + Serializer, מודל ה-Metadata (`MetadataCatalog`, `ColumnInfo`), `Control` | אין |
-| Application | `DefinitionBinder`, `ViolationReasonBuilder`, `ControlExecutionService`, `BusinessCatalogService`, `ControlService`, `RunService`, `CanonicalValueJson`, ממשקים (`IMetadataProvider`, `IQueryBuilder`, `IControlRunner`, `IControlRepository`, `IControlRunRepository`) | Domain |
-| Infrastructure | `SqlMetadataProvider` (Dapper + cache), `MetadataCatalogFactory`, `SqlQueryBuilder`, `SqlControlRunner`, repositories (`SqlControlRepository`, `SqlControlRunRepository` + `TypedJsonValue`) | Application, Dapper, Microsoft.Data.SqlClient |
+| Application | `DefinitionBinder`, `ViolationReasonBuilder`, `ControlExecutionService`, `BusinessCatalogService`, `ControlService`, `RunService`, `CanonicalValueJson`, `AiSuggestionService` + `DefinitionSummaryBuilder`, ממשקים (`IMetadataProvider`, `IQueryBuilder`, `IControlRunner`, `IControlRepository`, `IControlRunRepository`, `IAiControlGenerator`) | Domain |
+| Infrastructure | `SqlMetadataProvider` (Dapper + cache), `MetadataCatalogFactory`, `SqlQueryBuilder`, `SqlControlRunner`, repositories (`SqlControlRepository`, `SqlControlRunRepository` + `TypedJsonValue`), `HttpAiControlGenerator` | Application, Dapper, Microsoft.Data.SqlClient, Microsoft.Extensions.Http |
 | Api | Controllers, DTOs (`Contracts`), `ApiExceptionHandler` + `ModelStateProblems` (ProblemDetails בעברית), CORS, OpenAPI + Swagger UI | Application, Infrastructure |
 
 ## Metadata
@@ -138,6 +138,71 @@ timeout → `ControlExecutionException` עם הודעה בעברית. הגדרו
 **CORS:** מדיניות `Frontend` מ-`Cors:AllowedOrigins` (ברירת מחדל `http://localhost:4200`), חושפת את `Location`.
 `UseHttpsRedirection` רק מחוץ ל-Development, כדי לא לשבור preflight מה-dev server של Angular.
 
+## שכבת ה-AI (שלב ב')
+
+משתמש מתאר בקרה בשפה חופשית, וה-AI **מציע** הגדרה במבנה DefinitionJson של שלב א'. ההצעה עוברת בדיוק את אותה ולידציה
+כמו הגדרה ידנית, ומוצגת למשתמש לאישור. **שום דבר לא נשמר ולא רץ** עד שהמשתמש מאשר.
+
+### זרימה
+
+```
+POST /api/ai/suggest-control {text}                       Api           — AiController
+   │  AiSuggestionService.SuggestAsync                     Application   — בדיקת הטקסט (1–2000 תווים)
+   │    ├─ BuildCatalogAsync ← IBusinessCatalogService       קטלוג עסקי: ישויות, נתיבי שדות (עומק 2), סוגים, אופרטורים, ערכי enum
+   │    └─ IAiControlGenerator.GenerateAsync(text, catalog)
+   ▼
+HttpAiControlGenerator                                     Infrastructure — POST {AiService:BaseUrl}/generate-control
+   ▼
+ai-service (Python, FastAPI)                               PromptBuilder → AiProvider (Mock) → ולידציה מול הקטלוג
+   ▼  {definition, explanation, confidence, warnings}      definition = JSON לא מהימן
+AiSuggestionService                                        ControlDefinitionSerializer.Parse → DefinitionBinder.Bind
+   │                                                       → DefinitionSummaryBuilder (תקציר בעברית מהקטלוג)
+   ▼
+AiSuggestionDto  → המשתמש בודק, עורך, ואז שומר דרך POST /api/controls עם source = "AI"
+                   (או מנסה קודם דרך POST /api/controls/preview)
+```
+
+- **ה-AI רואה רק מונחים עסקיים.** הקטלוג נבנה מ-`IBusinessCatalogService` (אותו שירות שמזין את ה-UI), עם נתיבים שכבר
+  "פורקו" דרך הקשרים (`Drone.Hub.IsActive`). אין בו שמות סכמה, טבלה או עמודה. שירות ה-Python לא ניגש ל-DB.
+- **ה-.NET לא סומך על התשובה.** הולידציה ב-Python היא קו ראשון בלבד. ההחלטה הסופית היא של אותו `DefinitionBinder` שבודק
+  הגדרות ידניות, כולל מה שה-Python לא יודע (למשל טווחי ערכים לפי `sys.columns`, `DECIMAL(6,2)` → ‎±9999.99).
+- **הפרדה מבנית:** ל-`AiSuggestionService` יש רק ארבע תלויות: `IAiControlGenerator`, `IBusinessCatalogService`,
+  `IMetadataProvider` ו-`DefinitionBinder`. אין לו גישה ל-repository או ל-runner, ולכן הוא לא יכול לשמור או להריץ (יש לכך גם בדיקה).
+- `GET /api/ai/prompt-preview?text=...` מחזיר את ה-prompt המלא ששירות ה-Python בונה (system, user, JSON schema של התשובה),
+  להדגמה שהתשתית מוכנה למודל אמיתי.
+
+### מבנה התשובה (`AiSuggestionDto`)
+
+| שדה | משמעות |
+|---|---|
+| `definition` | ההגדרה המוצעת (DefinitionJson). כשהיא תקינה, בצורה קנונית. כשאינה תקינה, כפי שהתקבלה, כדי שאפשר יהיה לתקן אותה בעורך. `null` כשה-AI לא הצליח לתרגם |
+| `isValid` | האם ההגדרה עברה את ה-Binder |
+| `rootEntity`, `rootEntityDisplayName` | ישות הבסיס (כשתקינה) |
+| `summary` | תקציר בעברית שנבנה **מהקטלוג**, כלומר מה שבאמת ירוץ, למשל `יאותרו רחפנים שבהם סטטוס רחפן: בשירות וגם מוקד פעיל (מוקד): לא.` |
+| `explanation` | ההסבר של ה-AI עצמו |
+| `confidence` | 0–1 כפי שה-AI דיווח; 0 כשאין הגדרה או שהיא לא תקינה |
+| `warnings` | הנחות והערות של ה-AI (למשל איך פורש "באיחור") |
+| `validationErrors` | `[{path, message}]`, אותן הודעות כמו בולידציה ידנית |
+
+בקשה שלא זוהתה **אינה שגיאה**: מוחזר 200 עם `definition: null` והסבר ב-`warnings`.
+טקסט ריק או ארוך מדי מחזיר 400. שירות AI לא זמין (לא רץ, timeout, סטטוס שגיאה, תשובה לא תקינה) מחזיר **503** ProblemDetails
+בעברית (`AiServiceUnavailableException`). שאר ה-API ממשיך לעבוד, ואפשר להגדיר בקרות ידנית.
+
+הגדרות: `AiService:BaseUrl` (ברירת מחדל `http://localhost:8001`) ו-`AiService:TimeoutSeconds` (30).
+גודל תשובה מרבי: 1MB.
+
+### החלפת מודל
+
+הבחירה במודל נעשית כולה בשירות ה-Python. כדי לחבר מודל אמיתי:
+
+1. כותבים מחלקה חדשה ב-`ai-service/providers/` שמממשת את `AiProvider.generate`: שולחת את `prompt.system` ואת `prompt.user`
+   למודל, עם `prompt.response_schema` כ-structured output / JSON mode, ומחזירה `ProviderResult`.
+   בכשל רשת או מכסה זורקים `ProviderError`, שהופך ל-502 ב-Python ול-503 ב-.NET.
+2. רושמים אותה ב-`_PROVIDERS` (`providers/__init__.py`) ומגדירים `AI_PROVIDER=<name>`.
+
+**אין שום שינוי ב-.NET:** החוזה (`{text, catalog}` → `{definition, explanation, confidence, warnings}`), הולידציה, ה-API,
+מנוע הבקרות וה-UI נשארים כמו שהם. אפשר גם להחליף את השירות כולו (למשל שירות מנוהל) דרך מימוש אחר של `IAiControlGenerator`.
+
 ## הנחות ומגבלות
 
 - **אין אימות משתמשים והרשאות.** ה-API פתוח לכל מי שמגיע אליו, ולכן מיועד לרשת מקומית/פנימית בלבד; לא נרשם מי יצר או שינה בקרה.
@@ -169,3 +234,11 @@ timeout → `ControlExecutionException` עם הודעה בעברית. הגדרו
     `99_verify.sql`, paging, חיפוש, סינון, ניסיונות injection, ומיון/סינון טיפוסי על הרצה סינתטית דטרמיניסטית
     (מספרים 2.5 < 9 < 10 < 100, תאריכים ותאריך-ושעה, `10` מוצא `10.00`). כל בקרה שנוצרת נמחקת בסוף.
 - **Unit:** `CanonicalValueJson` תחת cultures שונים (he-IL, de-DE, ar-SA), מגבלת ה-preview (50/100) בלי רישום הרצה.
+- **AI:**
+  - `AiSuggestionServiceTests` עם generator מזויף: הצעה תקינה (קנונית, עם תקציר), שגיאות Binder (כולל טווח עמודה),
+    JSON פגום, טקסט ריק או ארוך, קטלוג בלי שמות פיזיים, ובדיקה שאין לשירות תלות שמאפשרת לשמור או להריץ.
+  - `HttpAiControlGeneratorTests` עם `HttpMessageHandler` מזויף: מבנה הבקשה (חוזה ה-Python), פענוח התשובה,
+    סטטוס שגיאה, ניתוק, timeout ותשובה פגומה הופכים ל-503; ביטול של הקורא לא הופך ל-503.
+  - `AiApiTests`: ה-API עם generator מזויף, ו-`AiServiceDownApiTests` עם ה-generator האמיתי מול פורט סגור (503,
+    ושאר ה-API ממשיך לעבוד).
+  - בדיקות ה-Python: `cd ai-service && pytest`.

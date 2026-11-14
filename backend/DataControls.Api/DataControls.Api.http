@@ -26,3 +26,12 @@ GET {{host}}/api/runs?controlId=1
 
 ###
 GET {{host}}/api/runs/1/violations?page=1&pageSize=20&sortBy=PackageWeightKg&sortDir=desc
+
+### AI: free text -> proposed control (needs the AI service on :8001)
+POST {{host}}/api/ai/suggest-control
+Content-Type: application/json
+
+{ "text": "רחפן פעיל במוקד סגור" }
+
+###
+GET {{host}}/api/ai/prompt-preview?text=משלוח באיחור
