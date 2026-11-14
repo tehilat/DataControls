@@ -124,6 +124,45 @@ public class HttpAiControlGeneratorTests
     }
 
     [Fact]
+    public async Task Not_configured_service_passes_its_hebrew_reason_to_the_user()
+    {
+        const string reason = "חסר מפתח API לספק ה-AI \"openai\": יש להגדיר את משתנה הסביבה OPENAI_API_KEY ולהפעיל מחדש את השירות.";
+        var (generator, _) = Create(Json(
+            $$"""{"title":"שירות ה-AI אינו מוגדר","status":503,"detail":{{JsonSerializer.Serialize(reason)}}}""",
+            HttpStatusCode.ServiceUnavailable));
+
+        var ex = await Assert.ThrowsAsync<AiServiceUnavailableException>(() => generator.GenerateAsync("x", Catalog));
+        Assert.Equal(reason, ex.Message);
+
+        var preview = await Assert.ThrowsAsync<AiServiceUnavailableException>(() => generator.PreviewPromptAsync("x", Catalog));
+        Assert.Equal(reason, preview.Message);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadGateway, """{"detail":"פרטים פנימיים"}""")]          // only 503 carries a reason for the user
+    [InlineData(HttpStatusCode.ServiceUnavailable, """{"title":"x"}""")]                // no detail
+    [InlineData(HttpStatusCode.ServiceUnavailable, "not json")]
+    [InlineData(HttpStatusCode.ServiceUnavailable, """{"detail":"line1\nline2"}""")]   // control characters
+    [InlineData(HttpStatusCode.ServiceUnavailable, """{"detail":42}""")]
+    public async Task Other_failures_keep_the_generic_message(HttpStatusCode status, string body)
+    {
+        var (generator, _) = Create(Json(body, status));
+
+        var ex = await Assert.ThrowsAsync<AiServiceUnavailableException>(() => generator.GenerateAsync("x", Catalog));
+        Assert.Equal(AiServiceUnavailableException.DefaultMessage, ex.Message);
+    }
+
+    [Fact]
+    public async Task Overlong_reason_is_not_passed_on()
+    {
+        var detail = new string('א', HttpAiControlGenerator.MaxReasonLength + 1);
+        var (generator, _) = Create(Json($$"""{"detail":"{{detail}}"}""", HttpStatusCode.ServiceUnavailable));
+
+        var ex = await Assert.ThrowsAsync<AiServiceUnavailableException>(() => generator.GenerateAsync("x", Catalog));
+        Assert.Equal(AiServiceUnavailableException.DefaultMessage, ex.Message);
+    }
+
+    [Fact]
     public async Task Connection_failure_is_unavailable()
     {
         var (generator, _) = Create(_ => throw new HttpRequestException("connection refused"));

@@ -1,5 +1,54 @@
 # רדאר - בקרות איכות נתונים
 
+## התחלה מהירה
+
+מתוך תיקיית הפרויקט, ב-PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+הסקריפט בודק את הדרישות המוקדמות ([טבלה](#דרישות-מוקדמות)) ומסביר מה חסר, מוצא את SQL Server
+(`localhost\SQLEXPRESS`, מופע מקומי אחר או LocalDB), יוצר את בסיס הנתונים אם הוא לא קיים, מתקין תלויות, מפעיל את
+שלושת השירותים, כל אחד בחלון ממוזער משלו, ופותח את הדפדפן ב-http://localhost:4200.
+הרצה ראשונה לוקחת כמה דקות (התקנת חבילות), והרצות הבאות פחות מחצי דקה.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\stop.ps1                                     # עצירת כל השירותים
+powershell -ExecutionPolicy Bypass -File .\start.ps1 -SqlInstance "(localdb)\MSSQLLocalDB"  # מופע SQL Server מסוים
+powershell -ExecutionPolicy Bypass -File .\start.ps1 -ResetDatabase                     # בניית בסיס הנתונים מחדש
+powershell -ExecutionPolicy Bypass -File .\start.ps1 -NoBrowser                         # בלי פתיחת דפדפן
+```
+
+- **בסיס הנתונים נשמר בין הרצות:** `start.ps1` יוצר אותו רק אם הוא לא קיים, ולכן בקרות והרצות שיצרתם נשארות.
+  `-ResetDatabase` מוחק ובונה מחדש.
+- `-ExecutionPolicy Bypass` נדרש כי ברירת המחדל של Windows חוסמת סקריפטים, וגם סקריפטים שחולצו מ-ZIP שהורד מהאינטרנט.
+- הרצה של `start.ps1` כשהמערכת כבר רצה מפעילה אותה מחדש.
+- שירות ה-AI אופציונלי. אם הוא לא עולה או לא מוגדר, הסקריפט מציג אזהרה, וכל שאר המערכת עובדת
+  (ראו [שירות ה-AI לא מוגדר](#שירות-ה-ai-לא-מוגדר-או-חסר-מפתח-api)).
+- ההתקנה הידנית, צעד אחר צעד, מתוארת ב[התקנה והרצה](#התקנה-והרצה).
+
+## צילומי מסך
+
+<!--
+  להוספת צילום: שומרים את הקובץ ב-docs/screenshots/ בשם שבטבלה, ומוחקים את סימני ההערה מסביב לשורה שלו למטה.
+  רוחב מומלץ: 1400 פיקסלים. פירוט: docs/screenshots/README.md
+-->
+
+| מסך | קובץ |
+|---|---|
+| רשימת הבקרות | `docs/screenshots/01-controls-list.png` |
+| עורך בקרה: בונה תנאים מקונן ותקציר בעברית | `docs/screenshots/02-control-editor.png` |
+| תוצאות הרצה: חריגות וסיבה לכל רשומה | `docs/screenshots/03-run-results.png` |
+| יצירת בקרה בעזרת AI | `docs/screenshots/04-create-with-ai.png` |
+
+<!-- ![רשימת הבקרות](docs/screenshots/01-controls-list.png) -->
+<!-- ![עורך בקרה](docs/screenshots/02-control-editor.png) -->
+<!-- ![תוצאות הרצה](docs/screenshots/03-run-results.png) -->
+<!-- ![יצירת בקרה בעזרת AI](docs/screenshots/04-create-with-ai.png) -->
+
+## על המערכת
+
 מערכת Web גנרית שמאפשרת למשתמשים עסקיים להגדיר בקרות איכות נתונים בלי SQL ובלי להכיר את מבנה הטבלאות,
 להריץ אותן על SQL Server ולראות את הרשומות החריגות יחד עם הסיבה לכל חריגה.
 
@@ -192,7 +241,8 @@ $r.definition | ConvertTo-Json -Depth 10       # ההגדרה המוצעת
 מתוך תיקיית השורש. כל בלוק עובר לתיקייה שלו וחוזר לשורש בסוף, כך שאפשר להריץ אותם ברצף.
 
 ```powershell
-# Backend: unit + API + integration (אפשר גם כשה-API רץ)
+# Backend: unit + API + integration
+# אם ה-API רץ והקוד שלו השתנה מאז שעלה, ה-build לא יכול להחליף את הקבצים הנעולים (MSB3027). עוצרים קודם: .\stop.ps1
 cd backend
 dotnet test
 # בלי בסיס נתונים (בדיקות האינטגרציה ידלגו גם אוטומטית אם ה-DB לא זמין)
@@ -222,7 +272,23 @@ cd ..
 
 ## פתרון בעיות
 
+### שירות ה-AI לא מוגדר או חסר מפתח API
+
+ספק ה-Mock (ברירת המחדל) לא צריך מפתח API. אם משתנה הסביבה `AI_PROVIDER` מצביע על ספק שלא קיים, או על ספק שחסר לו
+מפתח, שירות ה-AI **לא קורס**. הוא עולה במצב "לא מוגדר":
+
+- `GET http://localhost:8001/health` מחזיר 503 עם `{"status":"not_configured","provider":...,"detail":...}`, ו-`start.ps1`
+  מציג אזהרה.
+- במסך "צור בעזרת AI" מופיעה הודעה בעברית עם הסיבה, למשל שהספק אינו מוכר או איזה משתנה סביבה חסר, וקישור להגדרה ידנית.
+- כל שאר המערכת (בקרות, הרצות, תוצאות) ממשיכה לעבוד כרגיל.
+
+התיקון: מגדירים את המשתנה החסר, או מוחקים את `AI_PROVIDER` כדי לחזור ל-Mock, ומפעילים מחדש
+(`.\stop.ps1` ואז `.\start.ps1`).
+
 ### פורט תפוס
+
+קודם כל: `powershell -ExecutionPolicy Bypass -File .\stop.ps1` עוצר כל תהליך של הפרויקט על 5149, 8001 ו-4200, ומדווח
+אם הפורט תפוס על ידי תוכנה אחרת (בלי לגעת בה). `start.ps1` עושה את זה בעצמו לפני ההפעלה.
 
 הודעה כמו `address already in use`, `Failed to bind to address` (API), `[Errno 10048]` (uvicorn), או `Port 4200 is already in use`
 (Angular) פירושה שתהליך אחר כבר מאזין לפורט. בדרך כלל זה מופע קודם של אותו שירות שלא נסגר.
@@ -275,4 +341,5 @@ Stop-Process -Id <PID1>,<PID2>,<PID3> -Force
 /docs                      מסמך ההגשה, ארכיטקטורה, דוגמאות בקרות, שלב ב', הנחות ומגבלות, כלי AI, מפרט ה-DB, דרישות המטלה
   requests/                בקשות לדוגמה לשלב ב' (UTF-8), ראו "בקשות לדוגמה לשלב ב'"
 /tools                     md_to_html.py: ממיר את docs/submission.md ל-docs/submission.html (ספרייה סטנדרטית בלבד)
+start.ps1 / stop.ps1       הפעלה ועצירה בפקודה אחת (ראו "התחלה מהירה")
 ```
