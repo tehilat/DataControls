@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using DataControls.Application.Ai;
@@ -85,7 +86,10 @@ public sealed class HttpAiControlGenerator(HttpClient http, ILogger<HttpAiContro
             {
                 var body = await SafeReadAsync(response, ct);
                 logger.LogWarning("AI service returned {Status} for {Path}: {Body}", (int)response.StatusCode, path, body);
-                throw new AiServiceUnavailableException(AiServiceUnavailableException.DefaultMessage);
+                // 503 = the service runs but is not configured (unknown AI_PROVIDER, missing API key).
+                // Its Hebrew "detail" says what to fix, so it is shown to the user instead of the generic message.
+                var reason = response.StatusCode == HttpStatusCode.ServiceUnavailable ? ConfigurationReason(body) : null;
+                throw new AiServiceUnavailableException(reason ?? AiServiceUnavailableException.DefaultMessage);
             }
 
             try
@@ -107,6 +111,30 @@ public sealed class HttpAiControlGenerator(HttpClient http, ILogger<HttpAiContro
     {
         logger.LogWarning(inner, "AI service returned a malformed answer ({Path})", path);
         return new AiServiceUnavailableException("התקבלה תשובה לא תקינה משירות ה-AI. ניתן לנסות שוב או להגדיר את הבקרה ידנית.", inner);
+    }
+
+    /// <summary>Upper bound on a configuration message passed on to the user.</summary>
+    public const int MaxReasonLength = 300;
+
+    /// <summary>The "detail" of the service's problem+json, if it is a short, plain message; otherwise null.</summary>
+    internal static string? ConfigurationReason(string body)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != JsonValueKind.Object
+                || !document.RootElement.TryGetProperty("detail", out var detail)
+                || detail.ValueKind != JsonValueKind.String)
+                return null;
+
+            var text = detail.GetString()?.Trim();
+            if (string.IsNullOrEmpty(text) || text.Length > MaxReasonLength || text.Any(char.IsControl)) return null;
+            return text;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static async Task<string> SafeReadAsync(HttpResponseMessage response, CancellationToken ct)

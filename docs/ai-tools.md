@@ -17,7 +17,7 @@
   Runner, סיבות חריגה), שכבת ה-API, שירות ה-AI ב-Python וחיבורו ל-.NET, וה-Frontend ב-Angular (רשימת בקרות, בונה
   תנאים רקורסיבי, מסך תוצאות, היסטוריה ומסך "צור בעזרת AI").
 - **בדיקות:** כתיבה והרצה של בדיקות xUnit, pytest ו-Angular (unit, API, אינטגרציה מול ה-DB, ניסיונות injection),
-  ובדיקות end-to-end מול השירותים הרצים. בסיום: 304 בדיקות .NET, 98 בדיקות Python ו-13 בדיקות Angular.
+  ובדיקות end-to-end מול השירותים הרצים. בסיום: 311 בדיקות .NET, 107 בדיקות Python ו-13 בדיקות Angular.
 - **תיעוד:** `CLAUDE.md`, `docs/architecture.md`, `ai-service/README.md`, `README.md` ומסמכי ההגשה.
 
 **אופן העבודה:**

@@ -74,6 +74,11 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
   If a tool fails with a certificate error, configure it to use that CA file; never disable TLS verification.
 
 ## How to run (update as the project evolves)
+- One command: `powershell -ExecutionPolicy Bypass -File .\start.ps1` (prerequisites check, SQL instance auto-detect incl.
+  LocalDB or `-SqlInstance`, DB created only if missing / `-ResetDatabase`, dotnet build + venv + npm install when needed,
+  3 services in minimized windows, PIDs in `.run/services.json`, browser). Messages are English (the Windows console shows
+  Hebrew reversed). `.\stop.ps1` stops them (recorded PIDs, then only project-owned listeners on 5149/8001/4200).
+  A non-default SQL instance reaches the API via env `ConnectionStrings__DroneOps` (no file change).
 - DB: run scripts in /database in order against `localhost\SQLEXPRESS` (always `-C` for the self-signed cert):
   `Get-ChildItem .\database\0[1-5]*.sql | Sort-Object Name | ForEach-Object { sqlcmd -S localhost\SQLEXPRESS -E -C -b -f 65001 -i $_.FullName }`
   then `sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -W -s "|" -i .\database\99_verify.sql`
@@ -147,6 +152,9 @@ same `ControlDefinitionSerializer` / `DefinitionBinder` as manual definitions an
 `POST /api/controls` with source `AI`. `GET /api/ai/prompt-preview?text=` shows the model prompt. AI down → 503 ProblemDetails.
 Python side: `AiProvider` interface, data-driven `MockProvider` (`mock_scenarios.json`), `PromptBuilder`, catalog validation.
 Swapping the model = new `AiProvider` in Python + `AI_PROVIDER`; no .NET change.
+A provider declares its keys in `required_env`; an unknown `AI_PROVIDER` or a missing key → the service starts
+"not configured" (`/health` 503, endpoints 503 problem+json with a Hebrew `detail`), and `HttpAiControlGenerator` passes that
+`detail` (503 only, ≤300 chars, no control characters) to the user. Never crash at import.
 
 ## Working agreement with Claude
 - Plan before coding; work in small steps, one layer at a time.

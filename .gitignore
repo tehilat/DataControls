@@ -498,3 +498,6 @@ dist/
 *.key
 *.crt
 *.p12
+
+# start.ps1 runtime state (PIDs of the service windows)
+.run/

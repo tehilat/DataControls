@@ -36,8 +36,17 @@ class ProviderError(Exception):
     """The provider could not produce an answer (network, quota, malformed model output...)."""
 
 
+class ProviderConfigError(ValueError):
+    """The provider cannot be created: unknown AI_PROVIDER, or a missing API key / setting.
+
+    The message is in Hebrew and is shown to the user (through the .NET API) as is.
+    """
+
+
 class AiProvider(ABC):
     name: str
+    # Environment variables the provider needs (e.g. an API key). The mock needs none.
+    required_env: tuple[str, ...] = ()
 
     @abstractmethod
     async def generate(self, request: ProviderRequest) -> ProviderResult: ...
