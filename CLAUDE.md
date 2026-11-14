@@ -76,10 +76,20 @@ Drone delivery fleet (hubs, drones, pilots, customers, deliveries). Full DB spec
   then `sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i .\database\99_verify.sql` (expect 14/14 Passed).
   `06_demo_add_weather_alerts.sql` is optional (genericity demo) and re-runnable.
   Seed dates are relative: valid future dates ≥ +365 days, invalid past dates ≥ 30 days back.
-- API: `cd backend && dotnet run --project DataControls.Api`
+- API: `cd backend && dotnet run --project DataControls.Api` (config: `ConnectionStrings:DroneOps`,
+  `ControlExecution:{MaxRows,CommandTimeoutSeconds,RunnerUser}`, `Metadata:{AllowedSchemas,CacheSeconds}`)
 - AI service: `cd ai-service && .venv\Scripts\activate && uvicorn main:app --reload --port 8001`
 - Frontend: `cd frontend && npm start`
-- Tests: `cd backend && dotnet test`
+- Tests: `cd backend && dotnet test` (unit + integration; integration needs the DB from scripts 01–05 and
+  skips itself if it is unreachable). Unit only: `dotnet test --filter "Category!=Integration"`.
+  Integration expectations are parsed from `database/99_verify.sql` — keep that file the single source of truth.
+
+## Backend engine (implemented)
+See `docs/architecture.md`. Pipeline: `ControlDefinitionSerializer` → `DefinitionBinder` (validation vs metadata,
+Hebrew errors, value ranges from `sys.columns`) → `SqlQueryBuilder` → `SqlControlRunner` → `ViolationReasonBuilder`,
+orchestrated by `ControlExecutionService`. Text params are always nvarchar; text `isEmpty` uses TRIM.
+SQL text for `meta`/`ctl` (the system's own tables) lives only in Infrastructure repositories/providers;
+business table/column names never appear in code.
 
 ## Working agreement with Claude
 - Plan before coding; work in small steps, one layer at a time.
